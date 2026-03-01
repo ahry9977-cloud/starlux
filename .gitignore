@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.vs/
+.DS_Store
+*.log
+.env
+.env.*
+
+# Vite/TS
+*.tsbuildinfo
+
+# local caches
+.vscode/

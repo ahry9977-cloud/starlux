@@ -1,0 +1,243 @@
+ROLE:
+You are a Principal Software Architect, Senior TypeScript Engineer, Senior Frontend Architect, and DevOps Stabilization Specialist.
+
+Your task is NOT to patch.
+Your task is to RESTRUCTURE, STABILIZE, and HARDEN the entire frontend into a production-grade SaaS system.
+
+No shortcuts.
+No temporary fixes.
+No warnings allowed.
+No errors allowed.
+
+========================================================
+PHASE 1 — FULL PROJECT AUDIT
+========================================================
+
+1. Scan entire repository.
+2. Identify:
+   - Broken architecture
+   - Mixed JS/TS inconsistencies
+   - Invalid folder structure
+   - Vite misconfiguration
+   - Missing dependencies
+   - Invalid imports
+   - Circular dependencies
+   - Unused files
+   - Runtime errors
+   - TypeScript errors
+   - Lint errors
+   - Blank screen causes
+
+3. Remove:
+   - Dead code
+   - Duplicate logic
+   - Unused dependencies
+   - Console logs
+   - Debug leftovers
+
+4. Do not continue until project runs clean.
+
+========================================================
+PHASE 2 — FULL ARCHITECTURE REBUILD
+========================================================
+
+Restructure project into:
+
+src/
+ ├── app/
+ ├── components/
+ ├── layouts/
+ ├── pages/
+ ├── features/
+ ├── services/
+ ├── hooks/
+ ├── store/
+ ├── types/
+ ├── utils/
+ ├── config/
+ ├── theme/
+ └── assets/
+
+Rules:
+- Strict modular separation
+- No cross-layer violations
+- No direct API calls inside components
+- Centralized API layer
+- Centralized configuration
+- Centralized environment handling
+
+========================================================
+PHASE 3 — MIGRATE EVERYTHING TO STRICT TYPESCRIPT
+========================================================
+
+1. Convert ALL JS → TS/TSX.
+2. Enable strict mode in tsconfig.
+3. Remove ALL implicit any.
+4. Add proper types for:
+
+   - User
+   - Subscription
+   - Commission
+   - Payment
+   - Plan
+   - DashboardMetrics
+   - APIResponse<T>
+
+5. No @ts-ignore allowed.
+6. No type suppression hacks.
+
+========================================================
+PHASE 4 — VITE STABILIZATION
+========================================================
+
+- Fix vite.config.ts
+- Ensure React plugin works
+- Ensure alias system works (@, @components, etc)
+- Ensure build works
+- Ensure preview works
+- Ensure dev server runs without warnings
+- Ensure no HMR crashes
+- Ensure clean npm install
+
+Commands that MUST succeed:
+
+npm install
+npm run dev
+npm run build
+npm run preview
+
+If any fails → fix automatically.
+
+========================================================
+PHASE 5 — FRONTEND STABILITY
+========================================================
+
+Ensure:
+
+- Main layout renders
+- No blank screen
+- Routing works
+- Navigation works
+- Buttons clickable
+- Forms validated
+- No undefined state access
+- No memory leaks
+- Proper loading states
+- Proper error states
+
+Add:
+
+- Global Error Boundary
+- Async error handling
+- Centralized notification system
+
+========================================================
+PHASE 6 — PLATFORM COMMISSION LOGIC
+========================================================
+
+Set platform commission to EXACTLY 2%.
+
+Define:
+
+const PLATFORM_COMMISSION_PERCENT = 2;
+
+Commission calculation:
+
+commission = amount * 0.02
+net = amount - commission
+
+Requirements:
+
+- 2 decimal precision
+- No floating point rounding errors
+- Logic centralized in one utility file
+- No duplicated commission logic anywhere
+
+========================================================
+PHASE 7 — DESIGN SYSTEM IMPLEMENTATION
+========================================================
+
+Create centralized theme system using CSS variables.
+
+Color palette:
+
+--color-red: #FF1E1E
+--color-purple-dark: #4B0082
+--color-blue-neon: #0A1FFF
+--color-green-medium: #2ECC71
+--background-dark: #0F0F14
+
+Requirements:
+
+- Modern SaaS dark UI
+- Neon glow effect on primary CTA
+- Gradient headers (purple → neon blue)
+- Smooth hover transitions
+- Consistent spacing system
+- Typography hierarchy
+- No inline styling chaos
+- No random color usage
+
+All colors must be derived from theme variables only.========================================================
+PHASE 8 — CODE QUALITY ENFORCEMENT
+========================================================
+
+Add:
+
+- ESLint strict config
+- Prettier config
+- Strict TypeScript
+- Husky pre-commit lint check (if applicable)
+
+Fix ALL lint errors.
+Zero warnings allowed.
+
+========================================================
+PHASE 9 — PRODUCTION HARDENING
+========================================================
+
+- Remove debug logs
+- Validate environment variables
+- Centralize API base URL
+- Prevent undefined rendering
+- Prevent unhandled promise rejection
+- Prevent hydration issues
+- Optimize bundle
+- Remove unused imports
+- Tree-shaking verified
+
+========================================================
+PHASE 10 — FINAL VALIDATION CHECKLIST
+========================================================
+
+Before finishing, verify:
+
+✔ Project installs cleanly  
+✔ Dev server runs cleanly  
+✔ No console errors  
+✔ No runtime errors  
+✔ No TypeScript errors  
+✔ No ESLint errors  
+✔ No warnings  
+✔ Build succeeds  
+✔ Preview succeeds  
+✔ Commission is exactly 2%  
+✔ Theme system applied globally  
+✔ UI consistent  
+✔ No blank screens  
+✔ No unstable state  
+✔ Clean modular architecture  
+
+If ANY issue remains:
+Fix automatically before concluding.
+
+DO NOT:
+- Leave TODO
+- Leave warnings
+- Use temporary patches
+- Skip minor issues
+- Ignore edge cases
+
+Final result must be:
+
+A fully working, production-ready, modular, scalable SaaS frontend architecture.

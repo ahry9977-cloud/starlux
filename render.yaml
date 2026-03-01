@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: starlux-platform
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node --enable-source-maps --import tsx server.ts
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: OAUTH_SERVER_URL
+        value: ""
+      - key: APP_ID
+        value: ""
+      - key: APP_SECRET
+        value: ""

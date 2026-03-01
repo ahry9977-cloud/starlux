@@ -1,0 +1,641 @@
+/* ============================================
+   STAR LUX - Checkout Animations
+   موشن جرافيك متطور لنظام الطلبات
+   ============================================ */
+
+/* ============= CSS Variables ============= */
+:root {
+  --checkout-primary: #00d4ff;
+  --checkout-secondary: #7c3aed;
+  --checkout-accent: #f472b6;
+  --checkout-success: #10b981;
+  --checkout-error: #ef4444;
+  --checkout-warning: #f59e0b;
+  --checkout-glow: 0 0 20px rgba(0, 212, 255, 0.5);
+  --checkout-glow-strong: 0 0 40px rgba(0, 212, 255, 0.7);
+  --checkout-transition: cubic-bezier(0.4, 0, 0.2, 1);
+  --checkout-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ============= Keyframe Animations ============= */
+
+/* Fade In Up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade In Scale */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide In Right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In Left (RTL) */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Pulse Glow */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 212, 255, 0.3),
+                0 0 10px rgba(0, 212, 255, 0.2),
+                0 0 15px rgba(0, 212, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5),
+                0 0 20px rgba(0, 212, 255, 0.4),
+                0 0 30px rgba(0, 212, 255, 0.3);
+  }
+}
+
+/* Neon Pulse */
+@keyframes neonPulse {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--checkout-primary),
+                 0 0 10px var(--checkout-primary),
+                 0 0 20px var(--checkout-primary);
+  }
+  50% {
+    text-shadow: 0 0 10px var(--checkout-primary),
+                 0 0 20px var(--checkout-primary),
+                 0 0 40px var(--checkout-primary),
+                 0 0 60px var(--checkout-primary);
+  }
+}
+
+/* Shimmer Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Truck Animation */
+@keyframes truckMove {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Truck Bounce */
+@keyframes truckBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Checkmark Draw */
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Circle Expand */
+@keyframes circleExpand {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Confetti Fall */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Progress Bar Fill */
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--progress-width, 100%);
+  }
+}
+
+/* Ripple Effect */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Spin */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bounce */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-15px);
+  }
+  60% {
+    transform: translateY(-7px);
+  }
+}
+
+/* Shake */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Float */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Gradient Shift */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ============= Animation Classes ============= */
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.5s var(--checkout-transition) forwards;
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.4s var(--checkout-transition) forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.5s var(--checkout-transition) forwards;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.5s var(--checkout-transition) forwards;
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-neonPulse {
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-truck {
+  animation: truckMove 2s var(--checkout-transition) forwards,
+             truckBounce 0.3s ease-in-out infinite;
+}
+
+.animate-checkmark {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: checkmarkDraw 0.5s var(--checkout-transition) 0.2s forwards;
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s ease infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-gradientShift {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* ============= Stagger Delays ============= */
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* ============= Glass Morphism ============= */
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+}
+
+/* ============= Neon Effects ============= */
+
+.neon-border {
+  border: 2px solid var(--checkout-primary);
+  box-shadow: 0 0 10px var(--checkout-primary),
+              inset 0 0 10px rgba(0, 212, 255, 0.1);
+}
+
+.neon-text {
+  color: var(--checkout-primary);
+  text-shadow: 0 0 10px var(--checkout-primary),
+               0 0 20px var(--checkout-primary);
+}
+
+/* ============= Button States ============= */
+
+.checkout-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s var(--checkout-transition);
+}
+
+.checkout-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.checkout-btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.checkout-btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(50%);
+}
+
+.checkout-btn-active {
+  background: linear-gradient(135deg, var(--checkout-primary), var(--checkout-secondary));
+  box-shadow: var(--checkout-glow);
+}
+
+.checkout-btn-loading {
+  pointer-events: none;
+}
+
+.checkout-btn-success {
+  background: linear-gradient(135deg, var(--checkout-success), #059669);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.checkout-btn-error {
+  background: linear-gradient(135deg, var(--checkout-error), #dc2626);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ============= Progress Indicator ============= */
+
+.progress-container {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--checkout-primary), var(--checkout-secondary));
+  border-radius: 2px;
+  transition: width 0.5s var(--checkout-transition);
+}
+
+.progress-bar-animated {
+  animation: progressFill 1s var(--checkout-transition) forwards;
+}
+
+.progress-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5));
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============= Step Indicator ============= */
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: bold;
+  transition: all 0.3s var(--checkout-transition);
+}
+
+.step-pending {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.step-active {
+  background: linear-gradient(135deg, var(--checkout-primary), var(--checkout-secondary));
+  color: white;
+  box-shadow: var(--checkout-glow);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.step-completed {
+  background: var(--checkout-success);
+  color: white;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+/* ============= Card Animations ============= */
+
+.checkout-card {
+  transition: all 0.3s var(--checkout-transition);
+}
+
+.checkout-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.checkout-card-selected {
+  border-color: var(--checkout-primary);
+  box-shadow: var(--checkout-glow);
+}
+
+/* ============= Input Focus Effects ============= */
+
+.checkout-input {
+  transition: all 0.3s var(--checkout-transition);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.checkout-input:focus {
+  border-color: var(--checkout-primary);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+  outline: none;
+}
+
+.checkout-input-error {
+  border-color: var(--checkout-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  animation: shake 0.3s ease-in-out;
+}
+
+.checkout-input-success {
+  border-color: var(--checkout-success);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* ============= Particle Effects ============= */
+
+.particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle-success {
+  background: var(--checkout-success);
+  animation: confettiFall 2s ease-out forwards;
+}
+
+/* ============= Responsive Animations ============= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .animate-fadeInUp {
+    animation-duration: 0.3s;
+  }
+  
+  .animate-slideInRight,
+  .animate-slideInLeft {
+    animation-duration: 0.3s;
+  }
+}
+
+/* ============= Performance Optimizations ============= */
+
+/* GPU Acceleration */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Smooth scrolling for checkout container */
+.checkout-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.5);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.7);
+}
+
+/* Touch-friendly buttons */
+@media (hover: none) and (pointer: coarse) {
+  .checkout-btn {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  .checkout-btn:active {
+    transform: scale(0.98);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-card {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid white;
+  }
+  
+  .neon-border {
+    border-width: 3px;
+  }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .checkout-input {
+    color-scheme: dark;
+  }
+}
+
+/* Print styles */
+@media print {
+  .animate-fadeInUp,
+  .animate-slideInRight,
+  .animate-slideInLeft,
+  .animate-pulseGlow,
+  .animate-shimmer {
+    animation: none !important;
+  }
+  
+  .glass-card {
+    background: white;
+    border: 1px solid #ccc;
+  }
+}
