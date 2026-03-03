@@ -63,8 +63,35 @@ if (hasBuiltFrontend) {
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 app.get("/api/health/db", async (_req, res) => {
-  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL || process.env.MYSQL_URL);
+  const rawUrl = process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? "";
+  const urlSource = process.env.DATABASE_URL ? "DATABASE_URL" : process.env.MYSQL_URL ? "MYSQL_URL" : "none";
+  const hasDatabaseUrl = Boolean(rawUrl);
   const hasDbParts = Boolean(process.env.DB_HOST && process.env.DB_USER && process.env.DB_NAME);
+
+  let urlInfo:
+    | {
+        source: string;
+        user?: string;
+        host?: string;
+        port?: string;
+        database?: string;
+      }
+    | undefined;
+
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      urlInfo = {
+        source: urlSource,
+        user: u.username || undefined,
+        host: u.hostname || undefined,
+        port: u.port || undefined,
+        database: u.pathname?.replace(/^\//, "") || undefined,
+      };
+    } catch {
+      urlInfo = { source: urlSource };
+    }
+  }
 
   const start = Date.now();
   try {
@@ -76,6 +103,7 @@ app.get("/api/health/db", async (_req, res) => {
           configured: false,
           hasDatabaseUrl,
           hasDbParts,
+          urlInfo,
         },
         durationMs: Date.now() - start,
       });
@@ -88,6 +116,7 @@ app.get("/api/health/db", async (_req, res) => {
         configured: true,
         hasDatabaseUrl,
         hasDbParts,
+        urlInfo,
       },
       durationMs,
     });
@@ -98,6 +127,7 @@ app.get("/api/health/db", async (_req, res) => {
         configured: true,
         hasDatabaseUrl,
         hasDbParts,
+        urlInfo,
       },
       durationMs: Date.now() - start,
       error: {
