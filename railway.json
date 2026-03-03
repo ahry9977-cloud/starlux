@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "rm -rf node_modules/.vite || true && npm ci && npm run build:prod"
+    "buildCommand": "export npm_config_cache=/tmp/npm-cache && rm -rf node_modules/.vite || true && npm run build:prod"
   },
   "deploy": {
     "startCommand": "npm run start",
