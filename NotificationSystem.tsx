@@ -315,7 +315,7 @@ export default function NotificationSystem() {
       />
 
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger>
           <Button
             variant="ghost"
             size="icon"
@@ -340,7 +340,6 @@ export default function NotificationSystem() {
         <DropdownMenuContent
           align="end"
           className="w-[380px] p-0"
-          sideOffset={8}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b">

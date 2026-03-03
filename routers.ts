@@ -43,6 +43,7 @@ import { users, passwordResets, otpVerifications, stores } from "./drizzle/schem
 import { eq, and, or, sql, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "./emailNotifications";
+import { ENV } from "./env";
 
 const ALLOWED_PAYMENT_METHODS = ['mastercard', 'visa', 'asia_pay', 'zain_cash'] as const;
 
@@ -343,11 +344,11 @@ const authRouter = router({
 
       // Step 7: Create Server-Side Session - Generate JWT Token
       const { SignJWT } = await import('jose');
-      const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
+      const secretKey = new TextEncoder().encode(ENV.cookieSecret);
       
       const sessionToken = await new SignJWT({
         openId: user.email,
-        appId: process.env.VITE_APP_ID || 'star_lux',
+        appId: ENV.appId || 'star_lux',
         name: user.name || '',
         userId: user.id,
         role: user.role,
@@ -654,11 +655,11 @@ const authRouter = router({
 
       // Step 5: إنشاء JWT Token
       const { SignJWT } = await import('jose');
-      const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
+      const secretKey = new TextEncoder().encode(ENV.cookieSecret);
       
       const sessionToken = await new SignJWT({
         openId: user.email,
-        appId: process.env.VITE_APP_ID || 'star_lux',
+        appId: ENV.appId || 'star_lux',
         name: user.name || '',
         userId: user.id,
         role: user.role,

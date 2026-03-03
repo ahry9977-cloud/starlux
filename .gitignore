@@ -6,6 +6,10 @@ dist/
 .env
 .env.*
 
+# local sqlite db
+dev.db
+*.db
+
 # Vite/TS
 *.tsbuildinfo
 

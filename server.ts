@@ -9,7 +9,29 @@ import { createContext } from "./_core/context";
 
 const app = express();
 
-app.use(cors({ origin: true, credentials: true }));
+if (process.env.NODE_ENV === "production") {
+  // Required when running behind reverse proxies (Railway/Render/Nginx)
+  // so req.protocol and x-forwarded-proto are handled correctly.
+  app.set("trust proxy", 1);
+}
+
+function getCorsOrigins(): true | string[] {
+  const raw = process.env.CORS_ORIGINS ?? "";
+  const origins = raw
+    .split(",")
+    .map(v => v.trim())
+    .filter(Boolean);
+
+  if (origins.length === 0) return true;
+  return origins;
+}
+
+app.use(
+  cors({
+    origin: getCorsOrigins(),
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // In production, serve the built frontend from the same server

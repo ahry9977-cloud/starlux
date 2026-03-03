@@ -6,70 +6,170 @@ import { users, type User } from "./drizzle/schema";
 
 let _pool: mysql.Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
+let _sqlite: any | null = null;
 
 export async function getDb() {
   if (_db) return _db as any;
+  if (_sqlite) return {} as any;
 
   const hasUrl = Boolean(ENV.databaseUrl && ENV.databaseUrl.length > 0);
   const hasParts = Boolean(ENV.dbHost && ENV.dbUser && ENV.dbName);
 
   if (!hasUrl && !hasParts) {
+    // Development fallback to SQLite if MySQL not configured
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[DB] MySQL not configured, falling back to SQLite for development");
+      return await createSqliteDb();
+    }
     return null as any;
   }
 
-  _pool = hasUrl
-    ? mysql.createPool(ENV.databaseUrl)
-    : mysql.createPool({
-        host: ENV.dbHost,
-        port: ENV.dbPort,
-        user: ENV.dbUser,
-        password: ENV.dbPassword,
-        database: ENV.dbName,
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-      });
+  try {
+    _pool = hasUrl
+      ? mysql.createPool(ENV.databaseUrl)
+      : mysql.createPool({
+          host: ENV.dbHost,
+          port: ENV.dbPort,
+          user: ENV.dbUser,
+          password: ENV.dbPassword,
+          database: ENV.dbName,
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+        });
 
-  _db = drizzle(_pool);
-  return _db as any;
+    // Probe connection early so we can fall back in development.
+    await _pool.query("SELECT 1");
+
+    _db = drizzle(_pool);
+    return _db as any;
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[DB] MySQL connection failed, falling back to SQLite for development", err);
+      return await createSqliteDb();
+    }
+    throw err;
+  }
+}
+
+async function createSqliteDb() {
+  const Database = await import("better-sqlite3");
+  const sqlite = new Database.default("./dev.db");
+  _sqlite = sqlite;
+  await ensureSqliteTables(sqlite);
+  return {} as any;
+}
+
+async function ensureSqliteTables(sqlite: any) {
+  // Minimal tables needed for auth smoke test
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
+      passwordHash TEXT NOT NULL,
+      name TEXT,
+      role TEXT NOT NULL DEFAULT 'user',
+      isVerified INTEGER NOT NULL DEFAULT 0,
+      isBlocked INTEGER NOT NULL DEFAULT 0,
+      failedLoginAttempts INTEGER NOT NULL DEFAULT 0,
+      lockedUntil TEXT,
+      lastSignedIn TEXT,
+      phoneNumber TEXT,
+      profileImage TEXT,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 }
 
 export const PLATFORM_COMMISSION_PERCENT = 2;
 export const PLATFORM_COMMISSION_RATE = PLATFORM_COMMISSION_PERCENT / 100;
 
 export async function getUserByEmail(_email: string) {
+  const email = _email.toLowerCase().trim();
+  if (_sqlite) {
+    const row = _sqlite
+      .prepare(
+        "SELECT id, email, passwordHash, name, role, isVerified, isBlocked, failedLoginAttempts, lockedUntil, lastSignedIn, phoneNumber, profileImage, createdAt, updatedAt FROM users WHERE email = ? LIMIT 1"
+      )
+      .get(email);
+    return (row ?? null) as any;
+  }
+
   const db = await getDb();
   if (!db) return null as any;
-
-  const email = _email.toLowerCase().trim();
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
   return (result[0] ?? null) as any;
 }
 
 export async function getUserById(_id: number) {
+  if (_sqlite) {
+    const row = _sqlite
+      .prepare(
+        "SELECT id, email, passwordHash, name, role, isVerified, isBlocked, failedLoginAttempts, lockedUntil, lastSignedIn, phoneNumber, profileImage, createdAt, updatedAt FROM users WHERE id = ? LIMIT 1"
+      )
+      .get(_id);
+    return (row ?? null) as any;
+  }
+
   const db = await getDb();
   if (!db) return null as any;
-
   const result = await db.select().from(users).where(eq(users.id, _id)).limit(1);
   return (result[0] ?? null) as any;
 }
 
 export async function createUser(_data: any) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
   const email = String(_data.email ?? "").toLowerCase().trim();
   const payload = {
     ..._data,
     email,
   };
 
+  if (_sqlite) {
+    const nowIso = new Date().toISOString();
+    const stmt = _sqlite.prepare(
+      "INSERT INTO users (email, passwordHash, name, role, isVerified, isBlocked, failedLoginAttempts, lockedUntil, lastSignedIn, phoneNumber, profileImage, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    const info = stmt.run(
+      payload.email ?? null,
+      payload.passwordHash ?? "",
+      payload.name ?? null,
+      payload.role ?? "user",
+      payload.isVerified ? 1 : 0,
+      payload.isBlocked ? 1 : 0,
+      Number(payload.failedLoginAttempts ?? 0),
+      payload.lockedUntil ? String(payload.lockedUntil) : null,
+      payload.lastSignedIn ? String(payload.lastSignedIn) : null,
+      payload.phoneNumber ?? null,
+      payload.profileImage ?? null,
+      nowIso,
+      nowIso
+    );
+    return (info.lastInsertRowid ?? 0) as any;
+  }
+
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
   const result = await db.insert(users).values(payload);
   const insertId = (result as any).insertId ?? (Array.isArray(result) ? (result as any)[0] : undefined);
   return (insertId ?? 0) as any;
 }
 
 export async function updateUser(_id: number, _data: any) {
+  if (_sqlite) {
+    const patch = { ..._data, updatedAt: new Date().toISOString() };
+    const fields: string[] = [];
+    const values: any[] = [];
+    for (const [k, v] of Object.entries(patch)) {
+      fields.push(`${k} = ?`);
+      values.push(v);
+    }
+    if (fields.length === 0) return;
+    values.push(_id);
+    _sqlite.prepare(`UPDATE users SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+    return;
+  }
+
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const patch = { ..._data, updatedAt: new Date() };
@@ -77,10 +177,23 @@ export async function updateUser(_id: number, _data: any) {
 }
 
 export async function updateUserLoginAttempts(_email: string, _attempts: number, _lockedUntil?: Date | null) {
+  const email = _email.toLowerCase().trim();
+  if (_sqlite) {
+    _sqlite
+      .prepare(
+        "UPDATE users SET failedLoginAttempts = ?, lockedUntil = ?, updatedAt = ? WHERE email = ?"
+      )
+      .run(
+        _attempts,
+        _lockedUntil ? _lockedUntil.toISOString() : null,
+        new Date().toISOString(),
+        email
+      );
+    return;
+  }
+
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
-  const email = _email.toLowerCase().trim();
   await db
     .update(users)
     .set({
