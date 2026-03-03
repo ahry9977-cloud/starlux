@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -35,12 +36,14 @@ app.use(
 );
 app.use(express.json());
 
-// In production, serve the built frontend from the same server
-if (process.env.NODE_ENV === "production") {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const publicDir = path.resolve(__dirname, "dist", "public");
+// Serve the built frontend from the same server when available.
+// On some hosts (e.g. Railway) NODE_ENV may not be set to "production".
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.resolve(__dirname, "dist", "public");
+const hasBuiltFrontend = fs.existsSync(path.join(publicDir, "index.html"));
 
+if (hasBuiltFrontend) {
   app.use(express.static(publicDir));
   app.get("/", (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
