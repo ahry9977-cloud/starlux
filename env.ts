@@ -3,7 +3,7 @@ export const ENV = {
   appId: process.env.APP_ID ?? "",
   appSecret: process.env.APP_SECRET ?? "",
   cookieSecret: process.env.COOKIE_SECRET ?? "dev_cookie_secret_change_me",
-  databaseUrl: process.env.DATABASE_URL ?? "",
+  databaseUrl: process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? "",
   dbHost: process.env.DB_HOST ?? "",
   dbPort: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   dbUser: process.env.DB_USER ?? "",
