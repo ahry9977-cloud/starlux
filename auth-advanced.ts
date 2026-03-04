@@ -5,9 +5,15 @@
 
 import { SignJWT, jwtVerify } from 'jose';
 import { User } from './drizzle/schema';
+import { getUserById } from './db';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
-const REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_SECRET + '-refresh');
+const BASE_JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.COOKIE_SECRET ||
+  "dev_jwt_secret_change_me";
+
+const JWT_SECRET = new TextEncoder().encode(BASE_JWT_SECRET);
+const REFRESH_SECRET = new TextEncoder().encode(`${BASE_JWT_SECRET}-refresh`);
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
@@ -166,18 +172,17 @@ export async function refreshAccessToken(refreshToken: string) {
       throw new Error('Invalid token type');
     }
 
-    // يجب الحصول على بيانات المستخدم من قاعدة البيانات
-    // هذا مثال توضيحي فقط
-    const newAccessToken = await new SignJWT({
-      userId: payload.userId,
-      email: payload.email,
-      role: 'user', // يجب الحصول عليه من DB
-      type: 'access',
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-      .sign(JWT_SECRET);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) {
+      throw new Error('Invalid refresh token payload');
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const newAccessToken = await createAccessToken(user as any);
 
     return {
       accessToken: newAccessToken,

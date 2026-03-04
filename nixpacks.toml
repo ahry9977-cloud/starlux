@@ -1,3 +1,4 @@
+
 [phases.setup]
 # Ensure native modules like better-sqlite3 can build if needed
 nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake", "pkg-config"]
