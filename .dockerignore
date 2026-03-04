@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vs/
+.DS_Store
+*.log
+.env
+.env.*
+
+# local sqlite db
+dev.db
+*.db
+
+# Vite/TS
+*.tsbuildinfo
+
+# local caches
+.vscode/
