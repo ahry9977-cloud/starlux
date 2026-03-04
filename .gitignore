@@ -15,3 +15,8 @@ dev.db
 
 # local caches
 .vscode/
+
+dd.txt
+
+vite.config.ts.timestamp-*
+*.mjs
