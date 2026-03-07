@@ -39,7 +39,7 @@ import {
   advancedProductSearch,
 } from "./db";
 import { roleRouter } from "./roleRouter";
-import { users, passwordResets, otpVerifications, stores } from "./drizzle/schema";
+import { users, passwordResets, otpVerifications, stores, sellerPaymentMethods } from "./drizzle/schema";
 import { eq, and, or, sql, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "./emailNotifications";
@@ -136,6 +136,23 @@ const authRouter = router({
         throw new Error("كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم");
       }
 
+      const passwordHash = await bcrypt.hash(input.password, 10);
+
+      const userId = await createUser({
+        email: normalizedEmail,
+        passwordHash,
+        name: input.name,
+        role: "user",
+        isVerified: false,
+        isBlocked: false,
+        failedLoginAttempts: 0,
+        phoneNumber: input.phoneNumber,
+      });
+
+      if (!userId) {
+        throw new Error("فشل إنشاء الحساب");
+      }
+
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
@@ -157,6 +174,7 @@ const authRouter = router({
       return {
         success: true,
         message: "تم إرسال رمز التحقق إلى هاتفك",
+        userId,
       };
     }),
 
@@ -209,6 +227,49 @@ const authRouter = router({
         }
       }
 
+      const passwordHash = await bcrypt.hash(input.password, 10);
+
+      const userId = await createUser({
+        email: normalizedEmail,
+        passwordHash,
+        name: input.storeName,
+        role: "seller",
+        isVerified: false,
+        isBlocked: false,
+        failedLoginAttempts: 0,
+        phoneNumber: input.phoneNumber,
+      });
+
+      if (!userId) {
+        throw new Error("فشل إنشاء حساب البائع");
+      }
+
+      const storeInserted = await db
+        .insert(stores)
+        .values({
+          name: input.storeName,
+          sellerId: Number(userId),
+          category: input.storeType,
+          description: input.storeName,
+          isVerified: false,
+          isActive: true,
+        } as any)
+        .returning({ id: stores.id });
+
+      const storeId = Number((storeInserted as any)?.[0]?.id ?? 0);
+      if (!storeId) {
+        throw new Error("فشل إنشاء المتجر");
+      }
+
+      for (const method of input.paymentMethods) {
+        await db.insert(sellerPaymentMethods).values({
+          storeId,
+          methodType: String(method.id),
+          accountDetails: String(method.details),
+          isActive: true,
+        } as any);
+      }
+
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
@@ -234,6 +295,8 @@ const authRouter = router({
         message: "تم إرسال رمز التحقق إلى هاتفك",
         requiresPayment: input.plan !== 'free',
         plan: input.plan,
+        userId,
+        storeId,
       };
     }),
 
@@ -263,8 +326,11 @@ const authRouter = router({
       if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
       // التحقق من OTP
-      const otpRecord = await db.select().from(otpVerifications)
+      const otpRecord = await db
+        .select()
+        .from(otpVerifications)
         .where(eq(otpVerifications.phoneNumber, input.phoneNumber))
+        .orderBy(desc(otpVerifications.id))
         .limit(1);
 
       if (!otpRecord.length) {
@@ -288,6 +354,15 @@ const authRouter = router({
       await db.update(otpVerifications)
         .set({ isUsed: true })
         .where(eq(otpVerifications.id, record.id));
+
+      const user = await getUserByEmail(input.email);
+      if (!user) {
+        throw new Error("الحساب غير موجود");
+      }
+
+      await updateUser(user.id, {
+        isVerified: true,
+      });
 
       return {
         success: true,
@@ -314,6 +389,10 @@ const authRouter = router({
       // Step 2: Check if account is blocked
       if (user.isBlocked) {
         throw new Error("الحساب محظور");
+      }
+
+      if (!user.isVerified) {
+        throw new Error("يرجى تفعيل الحساب أولاً");
       }
 
       // Step 3: Check if account is temporarily locked

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import fs from "node:fs";
 import path from "node:path";
@@ -88,6 +89,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(compression());
 app.use(express.json());
 
 function isSocialBot(userAgentRaw: unknown): boolean {
