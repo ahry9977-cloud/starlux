@@ -96,6 +96,7 @@ async function ensurePostgresSchema(pg: PgPool) {
   const res = await pg.query(`SELECT to_regclass('public.users') AS users_table`);
   const exists = Boolean(res.rows?.[0]?.users_table);
   if (exists) {
+    await applyPostgresMigrations(pg);
     _pgSchemaEnsured = true;
     return;
   }
@@ -112,7 +113,56 @@ async function ensurePostgresSchema(pg: PgPool) {
   }
 
   await pg.query(ddl);
+  await applyPostgresMigrations(pg);
   _pgSchemaEnsured = true;
+}
+
+async function applyPostgresMigrations(pg: PgPool) {
+  // Notifications table expansion
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS readAt TIMESTAMPTZ NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS isArchived BOOLEAN NOT NULL DEFAULT FALSE`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS data TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS category VARCHAR(50) NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS priority VARCHAR(16) NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS actionUrl TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS actionLabel TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS expiresAt TIMESTAMPTZ NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS emailSent BOOLEAN NOT NULL DEFAULT FALSE`);
+  await pg.query(`ALTER TABLE IF EXISTS notifications ADD COLUMN IF NOT EXISTS emailSentAt TIMESTAMPTZ NULL`);
+
+  // Notification settings expansion
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailEnabled BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailOrders BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailPayments BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailWallet BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailStore BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailSubscription BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailSystem BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS emailCommunication BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS inAppEnabled BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS inAppSound BOOLEAN NOT NULL DEFAULT TRUE`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationSettings ADD COLUMN IF NOT EXISTS pushEnabled BOOLEAN NOT NULL DEFAULT FALSE`);
+
+  // Notification logs expansion
+  await pg.query(`ALTER TABLE IF EXISTS notificationLogs ADD COLUMN IF NOT EXISTS userId INTEGER NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS notificationLogs ADD COLUMN IF NOT EXISTS sentAt TIMESTAMPTZ NULL`);
+
+  // Currency tables expansion
+  await pg.query(`ALTER TABLE IF EXISTS supportedCurrencies ADD COLUMN IF NOT EXISTS exchangeRate DOUBLE PRECISION NOT NULL DEFAULT 1`);
+
+  // currencyConversions: support both old and new layouts
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS userId INTEGER NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS fromCurrency VARCHAR(10) NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS toCurrency VARCHAR(10) NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS fromAmount TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS toAmount TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS exchangeRate TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS fee TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS currencyConversions ADD COLUMN IF NOT EXISTS createdAt TIMESTAMPTZ NULL DEFAULT CURRENT_TIMESTAMP`);
+
+  // Helpful indexes (safe if tables exist)
+  await pg.query(`CREATE INDEX IF NOT EXISTS notifications_userid_createdat_idx ON notifications(userId, createdAt DESC)`);
+  await pg.query(`CREATE INDEX IF NOT EXISTS notifications_unread_idx ON notifications(userId, isRead) WHERE isRead = FALSE`);
 }
 
 async function createSqliteDb() {

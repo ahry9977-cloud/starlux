@@ -320,23 +320,26 @@ export async function createAdvancedNotification(
     message = message.replace(new RegExp(`{${key}}`, 'g'), String(value));
   }
 
-  const result = await db.insert(notifications).values({
-    userId,
-    type,
-    title: template.title,
-    message,
-    data: JSON.stringify(data),
-    category: template.category,
-    priority: template.priority,
-    actionUrl: options.actionUrl,
-    actionLabel: options.actionLabel,
-    expiresAt: options.expiresAt,
-    isRead: false,
-    isArchived: false,
-    emailSent: false,
-  });
+  const inserted = await db
+    .insert(notifications)
+    .values({
+      userId,
+      type,
+      title: template.title,
+      message,
+      data: JSON.stringify(data),
+      category: template.category,
+      priority: template.priority,
+      actionUrl: options.actionUrl,
+      actionLabel: options.actionLabel,
+      expiresAt: options.expiresAt,
+      isRead: false,
+      isArchived: false,
+      emailSent: false,
+    } as any)
+    .returning({ id: (notifications as any).id });
 
-  const notificationId = result[0]?.insertId;
+  const notificationId = Number((inserted as any)?.[0]?.id ?? 0) || undefined;
 
   // إرسال بريد إلكتروني إذا مطلوب
   if (options.sendEmail && notificationId) {
@@ -546,13 +549,17 @@ export async function deleteAllRead(userId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
 
-  const result = await db.delete(notifications)
-    .where(and(
-      eq(notifications.userId, userId),
-      eq(notifications.isRead, true)
-    ));
+  const countRes = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(notifications as any)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, true)));
+  const count = Number((countRes as any)?.[0]?.count ?? 0);
 
-  return result[0]?.affectedRows || 0;
+  await db
+    .delete(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, true)));
+
+  return count;
 }
 
 // ============= إعدادات الإشعارات =============

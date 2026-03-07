@@ -623,6 +623,18 @@ app.post("/api/rest/cart/checkout", async (req, res) => {
       const [storeData] = await db.select().from(stores).where(eq(stores.id, storeId)).limit(1);
       const sellerId = Number((storeData as any)?.sellerId ?? 1);
 
+      try {
+        const { createAdvancedNotification } = await import("./advancedNotifications");
+        await createAdvancedNotification(
+          Number(sellerId),
+          "order_new" as any,
+          { orderId, amount: orderTotal, currency: "USD" },
+          { actionUrl: "/seller-dashboard", actionLabel: "عرض الطلب" }
+        );
+      } catch (e) {
+        console.error("[Checkout] Failed to create notification", e);
+      }
+
       await db.execute(sql`
         INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
         VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())

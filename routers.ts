@@ -1779,6 +1779,17 @@ const cartRouter = router({
         const [storeData] = await db.select().from(stores).where(eq(stores.id, storeId)).limit(1);
         const sellerId = storeData?.sellerId || 1;
 
+        try {
+          await advancedNotifications.createAdvancedNotification(
+            Number(sellerId),
+            'order_new',
+            { orderId, amount: orderTotal, currency: 'USD' },
+            { actionUrl: `/seller-dashboard`, actionLabel: 'عرض الطلب' }
+          );
+        } catch (e) {
+          console.error('[Checkout] Failed to create notification:', e);
+        }
+
         // تحويل صافي البائع مباشرة وبشكل ذري لمنع التداخل تحت الضغط العالي
         await db.execute(sql`
           INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)

@@ -155,6 +155,16 @@ export const notifications = pgTable("notifications", {
   title: varchar("title", { length: 255 }),
   message: text("message"),
   isRead: boolean("isread").notNull().default(false),
+  readAt: timestamp("readat", { withTimezone: true }),
+  isArchived: boolean("isarchived").notNull().default(false),
+  data: text("data"),
+  category: varchar("category", { length: 50 }),
+  priority: varchar("priority", { length: 16 }),
+  actionUrl: text("actionurl"),
+  actionLabel: text("actionlabel"),
+  expiresAt: timestamp("expiresat", { withTimezone: true }),
+  emailSent: boolean("emailsent").notNull().default(false),
+  emailSentAt: timestamp("emailsentat", { withTimezone: true }),
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
@@ -168,16 +178,29 @@ export const notificationQueue = pgTable("notificationqueue", {
 export const notificationSettings = pgTable("notificationsettings", {
   id: serial("id").primaryKey(),
   userId: integer("userid").notNull(),
-  category: varchar("category", { length: 50 }).notNull(),
+  category: varchar("category", { length: 50 }),
   enabled: boolean("enabled").notNull().default(true),
+  emailEnabled: boolean("emailenabled").notNull().default(true),
+  emailOrders: boolean("emailorders").notNull().default(true),
+  emailPayments: boolean("emailpayments").notNull().default(true),
+  emailWallet: boolean("emailwallet").notNull().default(true),
+  emailStore: boolean("emailstore").notNull().default(true),
+  emailSubscription: boolean("emailsubscription").notNull().default(true),
+  emailSystem: boolean("emailsystem").notNull().default(true),
+  emailCommunication: boolean("emailcommunication").notNull().default(true),
+  inAppEnabled: boolean("inappenabled").notNull().default(true),
+  inAppSound: boolean("inappsound").notNull().default(true),
+  pushEnabled: boolean("pushenabled").notNull().default(false),
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
 export const notificationLogs = pgTable("notificationlogs", {
   id: serial("id").primaryKey(),
   notificationId: integer("notificationid"),
+  userId: integer("userid"),
   status: varchar("status", { length: 50 }).notNull(),
   error: text("error"),
+  sentAt: timestamp("sentat", { withTimezone: true }),
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
@@ -186,15 +209,21 @@ export const supportedCurrencies = pgTable("supportedcurrencies", {
   code: varchar("code", { length: 10 }).notNull(),
   name: varchar("name", { length: 100 }),
   symbol: varchar("symbol", { length: 10 }),
+  exchangeRate: doublePrecision("exchangerate").notNull().default(1),
   isActive: boolean("isactive").notNull().default(true),
 });
 
 export const currencyConversions = pgTable("currencyconversions", {
   id: serial("id").primaryKey(),
-  fromCode: varchar("fromcode", { length: 10 }).notNull(),
-  toCode: varchar("tocode", { length: 10 }).notNull(),
-  rate: doublePrecision("rate").notNull(),
+  userId: integer("userid"),
+  fromCurrency: varchar("fromcurrency", { length: 10 }).notNull(),
+  toCurrency: varchar("tocurrency", { length: 10 }).notNull(),
+  fromAmount: text("fromamount"),
+  toAmount: text("toamount"),
+  exchangeRate: text("exchangerate"),
+  fee: text("fee"),
   updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
 export const sellerWallet = pgTable(
