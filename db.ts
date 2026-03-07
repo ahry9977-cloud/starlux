@@ -29,6 +29,27 @@ let _db: ReturnType<typeof drizzlePg> | null = null;
 let _sqlite: any | null = null;
 let _pgSchemaEnsured = false;
 
+function buildDefaultAvatarDataUrl(seedRaw: string): string {
+  const seed = String(seedRaw ?? "").trim() || "U";
+  const initials = seed
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => (p[0] ? p[0].toUpperCase() : ""))
+    .join("")
+    .slice(0, 2);
+
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  const hue = hash % 360;
+  const bg = `hsl(${hue} 70% 45%)`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="${bg}"/><text x="64" y="74" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="52" fill="#fff" font-weight="700">${(initials || "U").replace(/</g, "&lt;")}</text></svg>`;
+
+  const b64 = Buffer.from(svg, "utf8").toString("base64");
+  return `data:image/svg+xml;base64,${b64}`;
+}
+
 export async function getDb() {
   if (_db) return _db as any;
   if (_sqlite) return {} as any;
@@ -165,9 +186,14 @@ export async function getUserById(_id: number) {
 
 export async function createUser(_data: any) {
   const email = String(_data.email ?? "").toLowerCase().trim();
+  const profileImage =
+    _data.profileImage != null && String(_data.profileImage).trim().length > 0
+      ? String(_data.profileImage)
+      : buildDefaultAvatarDataUrl(String(_data.name ?? email));
   const payload = {
     ..._data,
     email,
+    profileImage,
   };
 
   if (_sqlite) {
@@ -195,11 +221,8 @@ export async function createUser(_data: any) {
 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(users).values(payload);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
+  const inserted = await db.insert(users).values(payload).returning({ id: users.id });
+  const insertId = (inserted as any)?.[0]?.id;
   return Number(insertId ?? 0) as any;
 }
 
@@ -689,7 +712,7 @@ export async function createProduct(_data: any) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(products).values({
+  const inserted = await db.insert(products).values({
     storeId: _data.storeId,
     categoryId: _data.categoryId,
     title: _data.title,
@@ -699,11 +722,8 @@ export async function createProduct(_data: any) {
     images: Array.isArray(_data.images) ? JSON.stringify(_data.images) : _data.images ?? null,
     video: _data.video ?? null,
     isActive: _data.isActive ?? true,
-  });
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
+  }).returning({ id: products.id });
+  const insertId = (inserted as any)?.[0]?.id;
   return Number(insertId ?? 0) as any;
 }
 
