@@ -2871,7 +2871,7 @@ const searchRouter = router({
       // البحث في المتاجر
       if (type === 'all' || type === 'stores') {
         const storesResult = await searchStores(sanitizedQuery, Math.min(limit, 5));
-        results.stores = storesResult.map(s => ({
+        results.stores = storesResult.map((s: any) => ({
           id: String(s.id),
           type: 'store' as const,
           title: s.name,
@@ -2884,12 +2884,12 @@ const searchRouter = router({
       // البحث في الفئات
       if (type === 'all' || type === 'categories') {
         const categoriesResult = await searchCategories(sanitizedQuery, Math.min(limit, 5));
-        results.categories = categoriesResult.map(c => ({
+        results.categories = categoriesResult.map((c: any) => ({
           id: String(c.id),
           type: 'category' as const,
-          title: c.name,
+          title: c.name ?? c.nameAr ?? c.nameEn,
           subtitle: c.description?.substring(0, 50) || 'فئة',
-          image: c.image,
+          image: c.image ?? c.icon ?? null,
           url: `/category/${c.id}`,
         }));
       }

@@ -495,21 +495,127 @@ export async function searchProductsByQuery(_query: string, _limit = 50) {
   if (_sqlite) return [] as any[];
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const q = `%${String(_query).trim()}%`;
+  const raw = String(_query ?? "").trim();
+  if (!raw) return [] as any;
+
+  const likeQ = `%${raw}%`;
+  const tsQuery = raw
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => t.replace(/[':]/g, ""))
+    .join(" & ");
+
+  try {
+    const res = (await db.execute(sql`
+      SELECT p.*,
+        ts_rank(
+          to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.description,'')),
+          to_tsquery('simple', ${tsQuery})
+        ) AS rank
+      FROM products p
+      WHERE p.isactive = TRUE
+        AND to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.description,'')) @@ to_tsquery('simple', ${tsQuery})
+      ORDER BY rank DESC, p.id DESC
+      LIMIT ${Number(_limit)}
+    `)) as any;
+
+    const rows = (res as any)?.[0] ?? (res as any);
+    if (Array.isArray(rows) && rows.length > 0) return rows as any;
+  } catch {
+    // fallback to LIKE below
+  }
+
   return (await db
     .select()
     .from(products)
-    .where(and(eq(products.isActive, true), or(like(products.title, q), like(products.description, q))))
+    .where(and(eq(products.isActive, true), or(like(products.title, likeQ), like(products.description, likeQ))))
     .orderBy(desc(products.id))
     .limit(_limit)) as any;
 }
 
 export async function searchStores(_query: string, _limit = 50) {
-  return [] as any[];
+  if (_sqlite) return [] as any[];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const raw = String(_query ?? "").trim();
+  if (!raw) return [] as any;
+
+  const likeQ = `%${raw}%`;
+  const tsQuery = raw
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => t.replace(/[':]/g, ""))
+    .join(" & ");
+
+  try {
+    const res = (await db.execute(sql`
+      SELECT s.*,
+        ts_rank(
+          to_tsvector('simple', coalesce(s.name,'') || ' ' || coalesce(s.category,'') || ' ' || coalesce(s.description,'')),
+          to_tsquery('simple', ${tsQuery})
+        ) AS rank
+      FROM stores s
+      WHERE s.isactive = TRUE
+        AND to_tsvector('simple', coalesce(s.name,'') || ' ' || coalesce(s.category,'') || ' ' || coalesce(s.description,'')) @@ to_tsquery('simple', ${tsQuery})
+      ORDER BY rank DESC, s.id DESC
+      LIMIT ${Number(_limit)}
+    `)) as any;
+    const rows = (res as any)?.[0] ?? (res as any);
+    if (Array.isArray(rows) && rows.length > 0) return rows as any;
+  } catch {
+    // fallback
+  }
+
+  return (await db
+    .select()
+    .from(stores)
+    .where(and(eq(stores.isActive, true), or(like(stores.name, likeQ), like(stores.category, likeQ), like(stores.description, likeQ))))
+    .orderBy(desc(stores.id))
+    .limit(_limit)) as any;
 }
 
 export async function searchCategories(_query: string, _limit = 50) {
-  return [] as any[];
+  if (_sqlite) return [] as any[];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const raw = String(_query ?? "").trim();
+  if (!raw) return [] as any;
+
+  const likeQ = `%${raw}%`;
+  const tsQuery = raw
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => t.replace(/[':]/g, ""))
+    .join(" & ");
+
+  try {
+    const res = (await db.execute(sql`
+      SELECT c.*,
+        ts_rank(
+          to_tsvector('simple', coalesce(c.namear,'') || ' ' || coalesce(c.nameen,'') || ' ' || coalesce(c.description,'')),
+          to_tsquery('simple', ${tsQuery})
+        ) AS rank
+      FROM categories c
+      WHERE c.isactive = TRUE
+        AND to_tsvector('simple', coalesce(c.namear,'') || ' ' || coalesce(c.nameen,'') || ' ' || coalesce(c.description,'')) @@ to_tsquery('simple', ${tsQuery})
+      ORDER BY rank DESC, c.id DESC
+      LIMIT ${Number(_limit)}
+    `)) as any;
+    const rows = (res as any)?.[0] ?? (res as any);
+    if (Array.isArray(rows) && rows.length > 0) return rows as any;
+  } catch {
+    // fallback
+  }
+
+  return (await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.isActive, true), or(like(categories.nameAr, likeQ), like(categories.nameEn, likeQ), like(categories.description, likeQ))))
+    .orderBy(desc(categories.id))
+    .limit(_limit)) as any;
 }
 
 export async function getProductByStringId(_stringId: string) {
@@ -817,6 +923,52 @@ export async function advancedProductSearch(_opts: any) {
   if (_sqlite) return { products: [], total: 0 } as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  const qRaw = query != null ? String(query).trim() : "";
+  if (qRaw) {
+    const tsQuery = qRaw
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => t.replace(/[':]/g, ""))
+      .join(" & ");
+    const likeQ = `%${qRaw}%`;
+
+    const whereParts: any[] = [sql`p.isactive = TRUE`];
+    whereParts.push(sql`to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.description,'')) @@ to_tsquery('simple', ${tsQuery})`);
+    if (categoryId) whereParts.push(sql`p.categoryid = ${Number(categoryId)}`);
+    if (minPrice != null) whereParts.push(sql`p.price >= ${Number(minPrice)}`);
+    if (maxPrice != null) whereParts.push(sql`p.price <= ${Number(maxPrice)}`);
+    const whereSql = whereParts.length === 1 ? whereParts[0] : sql`${sql.join(whereParts, sql` AND `)}`;
+
+    try {
+      const res = (await db.execute(sql`
+        SELECT p.*,
+          ts_rank(
+            to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.description,'')),
+            to_tsquery('simple', ${tsQuery})
+          ) AS rank
+        FROM products p
+        WHERE ${whereSql}
+        ORDER BY rank DESC, p.id DESC
+        LIMIT ${Number(limit)}
+        OFFSET ${Number(offset)}
+      `)) as any;
+      const rows = (res as any)?.[0] ?? (res as any);
+      const list = Array.isArray(rows) ? rows : [];
+      if (list.length > 0) return { products: list, total: list.length } as any;
+    } catch {
+      // Fallback to LIKE-based search below
+      const clauses: any[] = [eq(products.isActive, true)];
+      clauses.push(or(like(products.title, likeQ), like(products.description, likeQ)));
+      if (categoryId) clauses.push(eq(products.categoryId, Number(categoryId)));
+      if (minPrice != null) clauses.push(gte(products.price, Number(minPrice)));
+      if (maxPrice != null) clauses.push(lte(products.price, Number(maxPrice)));
+      const where = clauses.length === 1 ? clauses[0] : and(...clauses);
+      const rows2 = (await db.select().from(products).where(where).orderBy(desc(products.id)).limit(limit).offset(offset)) as any[];
+      return { products: rows2, total: rows2.length } as any;
+    }
+  }
 
   const clauses: any[] = [eq(products.isActive, true)];
   if (query && String(query).trim().length > 0) {
