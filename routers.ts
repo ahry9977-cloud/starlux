@@ -46,6 +46,7 @@ import { sendWelcomeEmail } from "./emailNotifications";
 import { ENV } from "./env";
 
 const ALLOWED_PAYMENT_METHODS = ['mastercard', 'visa', 'asia_pay', 'zain_cash'] as const;
+const SELLER_PAYMENT_METHODS = ['sindipay'] as const;
 
 // Constants
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -1158,7 +1159,7 @@ const adminRouter = router({
       const activeOrderItems = await db.select({ orderId: orderItems.orderId }).from(orderItems).where(eq(orderItems.productId, input.id));
       
       if (activeOrderItems.length > 0) {
-        const orderIds = activeOrderItems.map(r => r.orderId);
+        const orderIds = activeOrderItems.map((r: any) => r.orderId);
         const { orders } = await import('./drizzle/schema');
         const activeOrders = await db.select({ count: sql`COUNT(*)` }).from(orders).where(
           and(
@@ -1207,9 +1208,9 @@ const adminRouter = router({
     
     // فلترة البائعين الذين لديهم متاجر
     const sellersWithStores = await db.select({ sellerId: stores.sellerId }).from(stores);
-    const sellerIdsWithStores = new Set(sellersWithStores.map(s => s.sellerId));
+    const sellerIdsWithStores = new Set(sellersWithStores.map((s: any) => s.sellerId));
     
-    return sellers.filter(s => !sellerIdsWithStores.has(s.id));
+    return sellers.filter((s: any) => !sellerIdsWithStores.has(s.id));
   }),
 });
 
@@ -1505,7 +1506,7 @@ const sellerRouter = router({
   // Add payment method
   addPaymentMethod: sellerProcedure
     .input(z.object({
-      methodType: z.enum(ALLOWED_PAYMENT_METHODS),
+      methodType: z.enum(SELLER_PAYMENT_METHODS),
       accountDetails: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -1725,6 +1726,41 @@ const cartRouter = router({
       };
     }),
 
+  // Buy Now - إنشاء طلب مباشر لمنتج واحد ثم الانتقال لصفحة الدفع
+  buyNow: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number(),
+        quantity: z.number().min(1).default(1),
+        paymentMethod: z.enum(ALLOWED_PAYMENT_METHODS).default("visa"),
+        shippingAddress: z
+          .object({
+            fullName: z.string().optional(),
+            phone: z.string().optional(),
+            address: z.string().optional(),
+            city: z.string().optional(),
+            country: z.string().optional(),
+          })
+          .optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { createDirectBuyOrder } = await import("./db");
+      const res = await createDirectBuyOrder({
+        buyerId: ctx.user!.id,
+        productId: input.productId,
+        quantity: input.quantity,
+        paymentMethod: input.paymentMethod,
+        shippingAddress: input.shippingAddress,
+      });
+      return {
+        success: true,
+        orderId: res.orderId,
+        total: res.total,
+        message: "تم إنشاء الطلب بنجاح",
+      };
+    }),
+
   // Get cart summary with commission breakdown
   getSummary: protectedProcedure.query(async ({ ctx }) => {
     const { getUserCart, PLATFORM_COMMISSION_RATE } = await import('./db');
@@ -1786,6 +1822,25 @@ const productsRouter = router({
         throw new Error('المنتج غير موجود');
       }
       return product;
+    }),
+
+  // Get store by ID (public)
+  getStoreById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getStoreById } = await import("./db");
+      const store = await getStoreById(input.id);
+      if (!store) throw new Error('المتجر غير موجود');
+      return store;
+    }),
+
+  // Get store products (public)
+  getStoreProducts: publicProcedure
+    .input(z.object({ storeId: z.number(), limit: z.number().min(1).max(100).default(40), offset: z.number().min(0).default(0) }))
+    .query(async ({ input }) => {
+      const { getStoreProductsPublic } = await import("./db");
+      const products = await getStoreProductsPublic(input.storeId, input.limit, input.offset);
+      return { products, total: products.length };
     }),
 
   // Get all categories (public)
@@ -1854,6 +1909,72 @@ const productsRouter = router({
       const { searchProducts } = await import('./db');
       return await searchProducts(input);
     }),
+
+  // Log product view (public)
+  logView: publicProcedure
+    .input(z.object({ productId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { logProductView } = await import("./db");
+      await logProductView(input.productId, ctx.user?.id ?? null);
+      return { success: true };
+    }),
+
+  // Trending products (public)
+  getTrending: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(12) }).optional())
+    .query(async ({ input }) => {
+      const { getTrendingProducts } = await import("./db");
+      const items = await getTrendingProducts(input?.limit ?? 12);
+      return { products: items };
+    }),
+
+  // Similar products (public)
+  getSimilar: publicProcedure
+    .input(z.object({ productId: z.number(), limit: z.number().min(1).max(50).default(8) }))
+    .query(async ({ input }) => {
+      const { getSimilarProducts } = await import("./db");
+      const items = await getSimilarProducts(input.productId, input.limit);
+      return { products: items };
+    }),
+
+  // Recommended for user (protected)
+  getRecommended: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(12) }).optional())
+    .query(async ({ ctx, input }) => {
+      const { getRecommendedProductsForUser } = await import("./db");
+      const items = await getRecommendedProductsForUser(ctx.user!.id, input?.limit ?? 12);
+      return { products: items };
+    }),
+});
+
+// ============= Sharing Router =============
+const sharingRouter = router({
+  track: publicProcedure
+    .input(
+      z.object({
+        platform: z.enum(["whatsapp", "telegram", "facebook", "twitter", "copy_link"]),
+        productId: z.number().optional(),
+        storeId: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { trackShare } = await import("./db");
+      const id = await trackShare({
+        platform: input.platform as any,
+        productId: input.productId,
+        storeId: input.storeId,
+        userId: ctx.user?.id ?? null,
+      });
+      return { success: true, id };
+    }),
+
+  topSharedProducts: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional())
+    .query(async ({ input }) => {
+      const { getTopSharedProducts } = await import("./db");
+      const items = await getTopSharedProducts(input?.limit ?? 10);
+      return { items };
+    }),
 });
 
 // ============= ChatBot Router =============
@@ -1862,9 +1983,36 @@ const chatbotRouter = router({
     .input(z.object({
       message: z.string().min(1).max(1000),
       language: z.enum(['ar', 'en']).default('ar'),
+      conversationId: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { invokeLLM } = await import('./_core/llm');
+      const {
+        appendChatMessage,
+        createChatConversation,
+        getChatMessages,
+        logSearchQuery,
+        searchProductsByQuery,
+      } = await import("./db");
+
+      const conversationId = input.conversationId ?? (await createChatConversation(ctx.user?.id ?? null));
+      await appendChatMessage(conversationId, "user", input.message);
+
+      // Lightweight RAG: bring top matching products into context
+      const candidates = await searchProductsByQuery(input.message, 6);
+      const productHints = (candidates ?? []).slice(0, 6).map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+      }));
+
+      await logSearchQuery(input.message, ctx.user?.id ?? null);
+
+      const previous = (await getChatMessages(conversationId, 10)).slice().reverse();
+      const historyMessages = previous.map((m: any) => ({
+        role: (String(m.role) as any) || "user",
+        content: String(m.content ?? ""),
+      }));
       
       const systemPrompt = input.language === 'ar' 
         ? `أنت مساعد ذكي لمنصة STAR LUX للتجارة الإلكترونية.
@@ -1922,16 +2070,25 @@ Answer directly first, then propose one practical next step.`;
         const response = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
+            ...historyMessages,
+            {
+              role: "system",
+              content:
+                input.language === "ar"
+                  ? `منتجات مقترحة من قاعدة البيانات (قد تساعد في الإجابة):\n${JSON.stringify(productHints)}`
+                  : `Suggested products from DB (may help):\n${JSON.stringify(productHints)}`,
+            },
             { role: 'user', content: input.message },
           ],
         });
         
-        const content = response.choices?.[0]?.message?.content || 
+        const content = (response as any)?.choices?.[0]?.message?.content || 
           (input.language === 'ar' 
             ? 'عذراً، لم أتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى.'
             : 'Sorry, I couldn\'t process your request. Please try again.');
         
-        return { response: content };
+        await appendChatMessage(conversationId, "assistant", content);
+        return { response: content, conversationId };
       } catch (error) {
         console.error('ChatBot LLM error:', error);
 
@@ -1987,8 +2144,6 @@ Answer directly first, then propose one practical next step.`;
       }
     }),
 });
-
-// ============= Subscription Router =============
 const subscriptionRouter = router({
   // تأكيد دفع الاشتراك
   confirmPayment: publicProcedure
@@ -2614,10 +2769,10 @@ const searchRouter = router({
       // البحث في المنتجات
       if (type === 'all' || type === 'products') {
         const productsResult = await searchProductsByQuery(sanitizedQuery, limit);
-        results.products = productsResult.map(p => ({
+        results.products = productsResult.map((p: any) => ({
           id: String(p.id),
           type: 'product' as const,
-          title: p.name,
+          title: p.title,
           subtitle: `${p.price} د.ع`,
           image: p.images ? (typeof p.images === 'string' ? JSON.parse(p.images)[0] : p.images[0]) : null,
           url: `/product/${p.id}`,
@@ -2777,7 +2932,7 @@ const searchRouter = router({
       }
       
       if (storeIdMatch) {
-        const storeId = storeIdMatch[1];
+        const storeId = Number(storeIdMatch[1]);
         const store = await getStoreById(storeId);
         
         if (store) {
@@ -2810,6 +2965,7 @@ export const appRouter = router({
   ratings: ratingsRouter,
   security: securityRouter,
   search: searchRouter,
+  sharing: sharingRouter,
   roles: roleRouter,
 });
 

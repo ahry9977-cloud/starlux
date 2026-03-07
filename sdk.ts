@@ -136,7 +136,7 @@ class SDKServer {
     } as ExchangeTokenResponse);
     const loginMethod = this.deriveLoginMethod(
       (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      (data as any)?.platform ?? (data as any)?.platform ?? null
     );
     return {
       ...(data as any),
@@ -236,7 +236,7 @@ class SDKServer {
     jwtToken: string
   ): Promise<GetUserInfoWithJwtResponse> {
     const payload: GetUserInfoWithJwtRequest = {
-      jwtToken,
+      ...( { jwtToken } as any ),
       projectId: ENV.appId,
     };
 
@@ -247,7 +247,7 @@ class SDKServer {
 
     const loginMethod = this.deriveLoginMethod(
       (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      (data as any)?.platform ?? (data as any)?.platform ?? null
     );
     return {
       ...(data as any),

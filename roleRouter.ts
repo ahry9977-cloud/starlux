@@ -527,7 +527,6 @@ export const roleRouter = router({
       try {
         const newPermission = await roleDb.createPermission({
           ...input,
-          isSystem: false,
         });
 
         // تسجيل في سجل التدقيق

@@ -4,7 +4,7 @@
  */
 
 import { TRPCError } from '@trpc/server';
-import * as roleDb from '../roleDb';
+import * as roleDb from './roleDb';
 
 /**
  * التحقق من امتلاك المستخدم صلاحية محددة
@@ -124,7 +124,7 @@ export async function logAccessDenied(
       action: 'access_denied',
       entityType: 'permission',
       entityId: 0,
-      notes: `Access denied for permission: ${permissionName}`,
+      newData: JSON.stringify({ permissionName, result: 'denied' }),
       changedBy: userId,
       ipAddress,
       userAgent,
@@ -148,7 +148,7 @@ export async function logAccessGranted(
       action: 'access_granted',
       entityType: 'permission',
       entityId: 0,
-      notes: `Access granted for permission: ${permissionName}`,
+      newData: JSON.stringify({ permissionName, result: 'granted' }),
       changedBy: userId,
       ipAddress,
       userAgent,

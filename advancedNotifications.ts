@@ -363,7 +363,6 @@ async function sendNotificationEmail(
     await db.insert(notificationLogs).values({
       notificationId,
       userId,
-      channel: 'email',
       status: 'pending',
     });
 
@@ -374,20 +373,19 @@ async function sendNotificationEmail(
     });
 
     // تحديث حالة الإرسال
-    if (sent) {
-      await db.update(notifications)
+    if (Boolean(sent)) {
+      await db.update(notifications as any)
         .set({ emailSent: true, emailSentAt: new Date() })
-        .where(eq(notifications.id, notificationId));
+        .where(eq((notifications as any).id, notificationId));
 
-      await db.update(notificationLogs)
+      await db.update(notificationLogs as any)
         .set({ status: 'sent', sentAt: new Date() })
         .where(and(
-          eq(notificationLogs.notificationId, notificationId),
-          eq(notificationLogs.channel, 'email')
+          eq((notificationLogs as any).notificationId, notificationId)
         ));
     }
 
-    return sent;
+    return Boolean(sent);
   } catch (error) {
     console.error('Error sending notification email:', error);
     return false;
@@ -425,39 +423,39 @@ export async function getUserNotifications(
   }
 
   if (category) {
-    conditions.push(eq(notifications.category, category));
+    conditions.push(eq((notifications as any).category, category));
   }
 
   if (!includeArchived) {
-    conditions.push(eq(notifications.isArchived, false));
+    conditions.push(eq((notifications as any).isArchived, false));
   }
 
   // إزالة الإشعارات المنتهية الصلاحية
   conditions.push(
     or(
-      isNull(notifications.expiresAt),
-      sql`${notifications.expiresAt} > NOW()`
+      isNull((notifications as any).expiresAt),
+      sql`${(notifications as any).expiresAt} > NOW()`
     )
   );
 
   const [notificationsList, totalResult, unreadResult] = await Promise.all([
     db.select()
-      .from(notifications)
+      .from(notifications as any)
       .where(and(...conditions))
-      .orderBy(desc(notifications.createdAt))
+      .orderBy(desc((notifications as any).createdAt))
       .limit(limit)
       .offset(offset),
     
     db.select({ count: sql<number>`COUNT(*)` })
-      .from(notifications)
+      .from(notifications as any)
       .where(and(...conditions)),
     
     db.select({ count: sql<number>`COUNT(*)` })
-      .from(notifications)
+      .from(notifications as any)
       .where(and(
-        eq(notifications.userId, userId),
-        eq(notifications.isRead, false),
-        eq(notifications.isArchived, false)
+        eq((notifications as any).userId, userId),
+        eq((notifications as any).isRead, false),
+        eq((notifications as any).isArchived, false)
       ))
   ]);
 
@@ -498,7 +496,7 @@ export async function markAllAsRead(userId: number, category?: NotificationCateg
   ];
 
   if (category) {
-    conditions.push(eq(notifications.category, category));
+    conditions.push(eq((notifications as any).category, category));
   }
 
   await db.update(notifications)
@@ -651,8 +649,8 @@ export async function convertCurrency(
       .from(supportedCurrencies)
       .where(inArray(supportedCurrencies.code, [fromCurrency, toCurrency]));
 
-    const fromRate = currencies.find(c => c.code === fromCurrency)?.exchangeRate;
-    const toRate = currencies.find(c => c.code === toCurrency)?.exchangeRate;
+    const fromRate = currencies.find((c: any) => c.code === fromCurrency)?.exchangeRate;
+    const toRate = currencies.find((c: any) => c.code === toCurrency)?.exchangeRate;
 
     if (!fromRate || !toRate) {
       return { success: false, error: 'Currency not supported' };
@@ -696,8 +694,8 @@ export async function getCurrencyConversionHistory(userId: number, limit: number
 
   return db.select()
     .from(currencyConversions)
-    .where(eq(currencyConversions.userId, userId))
-    .orderBy(desc(currencyConversions.createdAt))
+    .where(eq((currencyConversions as any).userId, userId))
+    .orderBy(desc((currencyConversions as any).createdAt))
     .limit(limit);
 }
 

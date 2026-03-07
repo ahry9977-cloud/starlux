@@ -4,16 +4,32 @@ import { cn } from "@/lib/utils";
 type Ctx = { open: boolean; setOpen: (v: boolean) => void };
 const AlertDialogContext = createContext<Ctx | null>(null);
 
-export function AlertDialog({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function AlertDialog({
+  open: controlledOpen,
+  onOpenChange,
+  children,
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    if (controlledOpen === undefined) setUncontrolledOpen(v);
+  };
+
   const ctx = useMemo(() => ({ open, setOpen }), [open]);
   return <AlertDialogContext.Provider value={ctx}>{children}</AlertDialogContext.Provider>;
 }
 
 export function AlertDialogTrigger({
   children,
+  asChild,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {
   const ctx = useContext(AlertDialogContext);
   return (
     <button type="button" onClick={() => ctx?.setOpen(true)} {...props}>

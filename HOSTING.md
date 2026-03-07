@@ -37,19 +37,11 @@ The server listens on:
 
 ### Database (production)
 
-Use MySQL in production (recommended). Provide either:
+Use PostgreSQL in production. Provide:
 
-- `DATABASE_URL` (mysql connection URL)
+- `DATABASE_URL` (postgres connection URL)
 
-or the parts:
-
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_NAME`
-
-> In development, if MySQL is not reachable, the server falls back to a local SQLite file `dev.db`.
+> In development, if `DATABASE_URL` is not configured, the server falls back to a local SQLite file `dev.db`.
 
 ### CORS (when frontend is separate)
 
@@ -83,7 +75,7 @@ This repository can be deployed as a single Railway service (backend serves fron
 ### Steps
 
 1. Create a new Railway project.
-2. Add a **MySQL** database in Railway (Plugin).
+2. Add a **PostgreSQL** database in Railway (Plugin).
 3. Connect this repo to the project (Deploy from GitHub).
 4. Railway will use `nixpacks.toml` to:
    - install: `npm ci`
@@ -96,7 +88,7 @@ Set these in Railway Variables:
 
 - `NODE_ENV=production`
 - `COOKIE_SECRET` (set a strong random value)
-- `DATABASE_URL` (Railway MySQL plugin will provide this; ensure it is exposed to the service)
+- `DATABASE_URL` (Railway PostgreSQL plugin will provide this; ensure it is exposed to the service)
 
 Optional:
 

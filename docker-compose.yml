@@ -1,21 +1,19 @@
 version: "3.9"
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: starlux-mysql
+  postgres:
+    image: postgres:16
+    container_name: starlux-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: starlux
-      MYSQL_USER: starlux
-      MYSQL_PASSWORD: starlux_pass
+      POSTGRES_DB: starlux
+      POSTGRES_USER: starlux
+      POSTGRES_PASSWORD: starlux_pass
     ports:
-      - "3306:3306"
-    command: ["--default-authentication-plugin=mysql_native_password"]
+      - "5432:5432"
     volumes:
-      - starlux_mysql_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - starlux_pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 
 volumes:
-  starlux_mysql_data:
+  starlux_pg_data:

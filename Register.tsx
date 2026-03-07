@@ -343,7 +343,7 @@ export default function Register() {
         countryCode: basicInfo.countryCode,
         country: storeInfo.country,
         plan: selectedPlan || 'free',
-        paymentMethods: selectedPaymentMethods,
+        paymentMethods: selectedPaymentMethods as any,
       });
 
       setSuccess('تم إرسال رمز التحقق إلى هاتفك');

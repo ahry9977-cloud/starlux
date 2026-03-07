@@ -668,7 +668,7 @@ export default function SellerRegisterPage() {
           {currentStep === 3 && (
             <div className="space-y-4 animate-slideIn">
               <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
-                {categoriesQuery.data?.map((category) => (
+                {categoriesQuery.data?.map((category: any) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.nameAr)}

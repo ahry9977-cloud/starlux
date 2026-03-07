@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
+import { and, desc, eq, like, sql } from "drizzle-orm";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
@@ -49,6 +50,82 @@ app.use(
 );
 app.use(express.json());
 
+function isSocialBot(userAgentRaw: unknown): boolean {
+  const ua = String(userAgentRaw ?? "").toLowerCase();
+  if (!ua) return false;
+  const needles = [
+    "facebookexternalhit",
+    "twitterbot",
+    "whatsapp",
+    "telegrambot",
+    "slackbot",
+    "discordbot",
+    "linkedinbot",
+    "embedly",
+  ];
+  return needles.some(n => ua.includes(n));
+}
+
+function escapeHtml(input: unknown): string {
+  return String(input ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function safeParseImages(images: unknown): string[] {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(x => typeof x === "string") as string[];
+  if (typeof images === "string") {
+    try {
+      const parsed = JSON.parse(images);
+      if (Array.isArray(parsed)) return parsed.filter(x => typeof x === "string") as string[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function renderOgHtml(opts: {
+  title: string;
+  description: string;
+  image?: string;
+  url: string;
+  type: string;
+}): string {
+  const title = escapeHtml(opts.title);
+  const description = escapeHtml(opts.description);
+  const url = escapeHtml(opts.url);
+  const type = escapeHtml(opts.type);
+  const image = opts.image ? escapeHtml(opts.image) : "";
+
+  return `<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:type" content="${type}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    ${image ? `<meta property="og:image" content="${image}" />` : ""}
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="${url}" />
+    <meta property="twitter:title" content="${title}" />
+    <meta property="twitter:description" content="${description}" />
+    ${image ? `<meta property="twitter:image" content="${image}" />` : ""}
+  </head>
+  <body>
+    <noscript>${title}</noscript>
+  </body>
+</html>`;
+}
+
 // Serve the built frontend from the same server when available.
 // On some hosts (e.g. Railway) NODE_ENV may not be set to "production".
 const __filename = fileURLToPath(import.meta.url);
@@ -57,6 +134,86 @@ const publicDir = path.resolve(__dirname, "dist", "public");
 const hasBuiltFrontend = fs.existsSync(path.join(publicDir, "index.html"));
 
 if (hasBuiltFrontend) {
+  app.get("/product/:id", async (req, res, next) => {
+    try {
+      if (!isSocialBot(req.headers["user-agent"])) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const productId = Number(req.params.id);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const { getProductById } = await import("./db");
+      const product = await getProductById(productId);
+      if (!product) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const url = `${baseUrl}/product/${productId}`;
+      const imgs = safeParseImages((product as any)?.images);
+      const image = imgs[0] || undefined;
+
+      const title = String((product as any)?.title ?? "Product");
+      const price = (product as any)?.price != null ? String((product as any).price) : "";
+      const description = String((product as any)?.description ?? "").slice(0, 200) || (price ? `السعر: ${price}` : "منتج على STAR LUX");
+
+      res.setHeader("content-type", "text/html; charset=utf-8");
+      return res.status(200).send(
+        renderOgHtml({
+          title,
+          description,
+          image,
+          url,
+          type: "product",
+        })
+      );
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  app.get("/store/:id", async (req, res, next) => {
+    try {
+      if (!isSocialBot(req.headers["user-agent"])) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const storeId = Number(req.params.id);
+      if (!Number.isFinite(storeId) || storeId <= 0) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const { getStoreById } = await import("./db");
+      const store = await getStoreById(storeId);
+      if (!store) {
+        return res.sendFile(path.join(publicDir, "index.html"));
+      }
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const url = `${baseUrl}/store/${storeId}`;
+
+      const title = String((store as any)?.name ?? "Store");
+      const description = String((store as any)?.description ?? "").slice(0, 220) || "متجر على STAR LUX";
+      const image = (store as any)?.logoUrl ? String((store as any).logoUrl) : undefined;
+
+      res.setHeader("content-type", "text/html; charset=utf-8");
+      return res.status(200).send(
+        renderOgHtml({
+          title,
+          description,
+          image,
+          url,
+          type: "website",
+        })
+      );
+    } catch (err) {
+      return next(err);
+    }
+  });
+
   app.use(express.static(publicDir));
   app.get("/", (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
@@ -75,11 +232,158 @@ if (hasBuiltFrontend) {
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
+app.get("/api/ai-suggest", async (req, res) => {
+  try {
+    const q = String(req.query?.q ?? "").trim();
+    if (!q || q.length < 2) return res.json({ ok: true, suggestions: [] });
+
+    const db = await getDb();
+    if (!db) return res.json({ ok: true, suggestions: [] });
+
+    const { products } = await import("./drizzle/schema");
+    const likeQ = `%${q}%`;
+
+    const rows = (await db
+      .select({ id: products.id, title: products.title })
+      .from(products)
+      .where(and(eq(products.isActive, true), like(products.title, likeQ)))
+      .orderBy(desc(products.id))
+      .limit(8)) as any[];
+
+    const suggestions = rows.map((r: any) => ({ id: Number(r.id), title: String(r.title ?? "") }));
+    return res.json({ ok: true, suggestions });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.post("/api/ai-search", async (req, res) => {
+  try {
+    const query = String(req.body?.query ?? "").trim();
+    if (!query) return res.status(400).json({ ok: false, message: "Missing query" });
+
+    const { invokeLLM } = await import("./_core/llm");
+    const { logSearchQuery } = await import("./db");
+
+    // Best effort: try to extract filters via LLM, otherwise use heuristics.
+    type Filters = {
+      keywords?: string;
+      categoryId?: number;
+      minPrice?: number;
+      maxPrice?: number;
+    };
+
+    const heuristic: Filters = (() => {
+      const q = query.toLowerCase();
+      const nums = q.match(/\d+(?:\.\d+)?/g)?.map((n) => Number(n)).filter((n) => Number.isFinite(n)) ?? [];
+      const minPrice = nums.length >= 2 ? Math.min(nums[0], nums[1]) : undefined;
+      const maxPrice = nums.length >= 2 ? Math.max(nums[0], nums[1]) : undefined;
+      // Very lightweight keywords extraction
+      const keywords = query.length > 3 ? query : undefined;
+      return { keywords, minPrice, maxPrice };
+    })();
+
+    let filters: Filters = heuristic;
+    try {
+      const llm = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content:
+              "Convert the user search query to JSON filters for e-commerce product search. Output ONLY a JSON object with keys: keywords, minPrice, maxPrice, categoryId.",
+          },
+          { role: "user", content: query },
+        ],
+      });
+      const content = String((llm as any)?.choices?.[0]?.message?.content ?? "").trim();
+      if (content.startsWith("{")) {
+        const parsed = JSON.parse(content);
+        filters = {
+          keywords: typeof parsed?.keywords === "string" ? parsed.keywords : heuristic.keywords,
+          categoryId: Number.isFinite(Number(parsed?.categoryId)) ? Number(parsed.categoryId) : undefined,
+          minPrice: Number.isFinite(Number(parsed?.minPrice)) ? Number(parsed.minPrice) : heuristic.minPrice,
+          maxPrice: Number.isFinite(Number(parsed?.maxPrice)) ? Number(parsed.maxPrice) : heuristic.maxPrice,
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    await logSearchQuery(query, null);
+
+    const db = await getDb();
+    if (!db) {
+      const { advancedProductSearch } = await import("./db");
+      const result = await advancedProductSearch({
+        query: filters.keywords ?? query,
+        categoryId: filters.categoryId,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        limit: 60,
+        offset: 0,
+      });
+      return res.json({ ok: true, filters, ...result });
+    }
+
+    const { products, orderItems, orders, productReviews } = await import("./drizzle/schema");
+    const likeQ = `%${String(filters.keywords ?? query).trim()}%`;
+
+    const whereParts: any[] = [sql`${products.isActive} = 1`];
+    whereParts.push(sql`(${products.title} LIKE ${likeQ} OR ${products.description} LIKE ${likeQ})`);
+    if (filters.categoryId) whereParts.push(sql`${products.categoryId} = ${Number(filters.categoryId)}`);
+    if (filters.minPrice != null) whereParts.push(sql`${products.price} >= ${Number(filters.minPrice)}`);
+    if (filters.maxPrice != null) whereParts.push(sql`${products.price} <= ${Number(filters.maxPrice)}`);
+    const whereSql = whereParts.length === 1 ? whereParts[0] : sql`${sql.join(whereParts, sql` AND `)}`;
+
+    const rankedRes = (await db.execute(sql`
+      SELECT
+        p.*,
+        COALESCE(AVG(pr.rating), 0) AS avgRating,
+        COALESCE(SUM(oi.quantity), 0) AS salesQty,
+        ((p.title LIKE ${likeQ}) * 2 + (p.description LIKE ${likeQ})) AS relevance
+      FROM ${products} p
+      LEFT JOIN ${productReviews} pr ON pr.product_id = p.id
+      LEFT JOIN ${orderItems} oi ON oi.productId = p.id
+      LEFT JOIN ${orders} o ON o.id = oi.orderId
+      WHERE ${whereSql}
+      GROUP BY p.id
+      ORDER BY relevance DESC, avgRating DESC, salesQty DESC, p.id DESC
+      LIMIT 60
+    `)) as any;
+
+    const rankedRows = (rankedRes as any)?.[0] ?? (rankedRes as any);
+    const productsRows = Array.isArray(rankedRows) ? rankedRows : [];
+
+    let didYouMean: string | undefined;
+    if (productsRows.length < 3 && query.length >= 3) {
+      const token = String(query).trim().split(/\s+/)[0];
+      const tokenLike = `%${token}%`;
+      const suggestRes = (await db.execute(sql`
+        SELECT p.title
+        FROM ${products} p
+        WHERE ${products.isActive} = 1 AND p.title LIKE ${tokenLike}
+        ORDER BY ABS(CHAR_LENGTH(p.title) - ${query.length}) ASC, p.id DESC
+        LIMIT 1
+      `)) as any;
+      const suggestRows = (suggestRes as any)?.[0] ?? (suggestRes as any);
+      const title = Array.isArray(suggestRows) ? (suggestRows[0]?.title ?? "") : "";
+      const normalized = String(title ?? "").trim();
+      if (normalized && normalized.toLowerCase() !== query.toLowerCase()) {
+        didYouMean = normalized;
+      }
+    }
+
+    return res.json({ ok: true, filters, products: productsRows, total: productsRows.length, didYouMean });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
 app.get("/api/health/db", async (_req, res) => {
-  const rawUrl = process.env.DATABASE_URL ?? process.env.MYSQL_URL ?? "";
-  const urlSource = process.env.DATABASE_URL ? "DATABASE_URL" : process.env.MYSQL_URL ? "MYSQL_URL" : "none";
+  const rawUrl = process.env.DATABASE_URL ?? "";
+  const urlSource = process.env.DATABASE_URL ? "DATABASE_URL" : "none";
   const hasDatabaseUrl = Boolean(rawUrl);
-  const hasDbParts = Boolean(process.env.DB_HOST && process.env.DB_USER && process.env.DB_NAME);
+  const hasDbParts = false;
 
   let urlInfo:
     | {
@@ -149,6 +453,239 @@ app.get("/api/health/db", async (_req, res) => {
         code: err?.code,
       },
     });
+  }
+});
+
+app.get("/api/rest/cart", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+
+    const { getUserCart } = await import("./db");
+    const items = await getUserCart(userId);
+    return res.json({ ok: true, items });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.post("/api/rest/cart/add", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+
+    const productId = Number(req.body?.productId);
+    const quantity = Number(req.body?.quantity ?? 1);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      return res.status(400).json({ ok: false, message: "Invalid productId" });
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ ok: false, message: "Invalid quantity" });
+    }
+
+    const { addToCart } = await import("./db");
+    const itemId = await addToCart(userId, productId, quantity);
+    return res.json({ ok: true, itemId });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.post("/api/rest/cart/checkout", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+
+    const paymentMethod = String(req.body?.paymentMethod ?? "").toLowerCase().trim();
+    const allowed = new Set(["mastercard", "visa", "asia_pay", "zain_cash"]);
+    if (!allowed.has(paymentMethod)) {
+      return res.status(400).json({ ok: false, message: "Unsupported payment method" });
+    }
+
+    const shippingAddress = req.body?.shippingAddress;
+    if (!shippingAddress || typeof shippingAddress !== "object") {
+      return res.status(400).json({ ok: false, message: "Missing shippingAddress" });
+    }
+
+    const notes = req.body?.notes;
+
+    const { getUserCart, clearCart, createTransaction, PLATFORM_COMMISSION_RATE } = await import("./db");
+    const cart = await getUserCart(userId);
+    if (!cart || cart.length === 0) {
+      return res.status(400).json({ ok: false, message: "Cart is empty" });
+    }
+
+    const db = await getDb();
+    if (!db) return res.status(503).json({ ok: false, message: "Database not available" });
+    const { orders, orderItems, stores } = await import("./drizzle/schema");
+
+    const subtotal = cart.reduce((sum: number, item: any) => sum + Number(item.price) * Number(item.quantity), 0);
+    const commissionTotal = Math.round(subtotal * PLATFORM_COMMISSION_RATE * 100) / 100;
+
+    const storeGroups = new Map<number, typeof cart>();
+    for (const item of cart as any[]) {
+      const storeId = Number((item as any).storeId ?? 1);
+      if (!storeGroups.has(storeId)) storeGroups.set(storeId, [] as any);
+      storeGroups.get(storeId)!.push(item);
+    }
+
+    const orderIds: number[] = [];
+    for (const [storeId, items] of Array.from(storeGroups.entries())) {
+      const orderTotal = items.reduce((sum: number, item: any) => sum + Number(item.price) * Number(item.quantity), 0);
+      const orderCommission = Math.round(orderTotal * PLATFORM_COMMISSION_RATE * 100) / 100;
+      const sellerAmount = orderTotal - orderCommission;
+
+      const [orderResult] = await db.insert(orders).values({
+        buyerId: userId,
+        storeId,
+        totalAmount: orderTotal,
+        commission: orderCommission,
+        sellerAmount,
+        paymentMethod,
+        paymentStatus: "pending",
+        shippingAddress: JSON.stringify(shippingAddress),
+        notes: notes ? String(notes) : null,
+      } as any);
+      const orderId = Number((orderResult as any).insertId ?? (orderResult as any));
+      orderIds.push(orderId);
+
+      for (const item of items) {
+        await db.insert(orderItems).values({
+          orderId,
+          productId: Number(item.productId ?? item.productId ?? item.id),
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          total: Number(item.price) * Number(item.quantity),
+        } as any);
+      }
+
+      const [storeData] = await db.select().from(stores).where(eq(stores.id, storeId)).limit(1);
+      const sellerId = Number((storeData as any)?.sellerId ?? 1);
+
+      await db.execute(sql`
+        INSERT INTO sellerWallet (sellerId, balance, currency, updatedAt)
+        VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
+        ON DUPLICATE KEY UPDATE
+          balance = balance + VALUES(balance),
+          updatedAt = NOW()
+      `);
+
+      await createTransaction({
+        orderId,
+        buyerId: userId,
+        sellerId,
+        amount: orderTotal,
+        paymentMethod,
+      });
+    }
+
+    await clearCart(userId);
+
+    return res.json({
+      ok: true,
+      orderIds,
+      subtotal,
+      commission: commissionTotal,
+      commissionRate: PLATFORM_COMMISSION_RATE * 100,
+      total: subtotal,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.get("/api/rest/seller/payment-methods", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    const role = String((payload as any).role ?? "");
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+    if (role !== "seller" && role !== "admin" && role !== "sub_admin") {
+      return res.status(403).json({ ok: false, message: "Seller access required" });
+    }
+
+    const { getSellerStore, getSellerPaymentMethods } = await import("./db");
+    const store = await getSellerStore(userId);
+    if (!store) return res.json({ ok: true, methods: [] });
+    const methods = await getSellerPaymentMethods(store.id);
+    return res.json({ ok: true, methods });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.post("/api/rest/seller/payment-methods", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    const role = String((payload as any).role ?? "");
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+    if (role !== "seller" && role !== "admin" && role !== "sub_admin") {
+      return res.status(403).json({ ok: false, message: "Seller access required" });
+    }
+
+    const methodType = String(req.body?.methodType ?? "").toLowerCase().trim();
+    const accountDetails = String(req.body?.accountDetails ?? "").trim();
+    if (methodType !== "sindipay") {
+      return res.status(400).json({ ok: false, message: "Only sindipay is supported for seller" });
+    }
+    if (!accountDetails || accountDetails.length < 3) {
+      return res.status(400).json({ ok: false, message: "Invalid accountDetails" });
+    }
+
+    const { getSellerStore, addSellerPaymentMethod } = await import("./db");
+    const store = await getSellerStore(userId);
+    if (!store) return res.status(400).json({ ok: false, message: "No store" });
+
+    const methodId = await addSellerPaymentMethod(store.id, "sindipay", accountDetails);
+    return res.json({ ok: true, methodId });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.delete("/api/rest/seller/payment-methods/:id", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    const role = String((payload as any).role ?? "");
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+    if (role !== "seller" && role !== "admin" && role !== "sub_admin") {
+      return res.status(403).json({ ok: false, message: "Seller access required" });
+    }
+
+    const methodId = Number(req.params.id);
+    if (!Number.isFinite(methodId)) return res.status(400).json({ ok: false, message: "Invalid id" });
+
+    const { getSellerStore, removeSellerPaymentMethod } = await import("./db");
+    const store = await getSellerStore(userId);
+    if (!store) return res.status(400).json({ ok: false, message: "No store" });
+
+    await removeSellerPaymentMethod(store.id, methodId);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
   }
 });
 

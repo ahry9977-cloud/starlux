@@ -16,6 +16,9 @@ dev.db
 # local caches
 .vscode/
 
+# archives
+*.zip
+
 dd.txt
 
 vite.config.ts.timestamp-*

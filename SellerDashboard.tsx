@@ -76,10 +76,7 @@ interface PaymentMethod {
 
 // Payment method labels - طرق الدفع العالمية والمحلية
 const paymentMethodLabels: Record<string, string> = {
-  zain_cash: "زين كاش",
-  asia_pay: "آسيا باي",
-  mastercard: "ماستركارد",
-  visa: "Visa",
+  sindipay: "SindiPay",
 };
 
 // Order status labels and colors
@@ -656,14 +653,19 @@ export default function SellerDashboard() {
                           <div>
                             <Label>القسم *</Label>
                             <Select
-                              value={productForm.categoryId}
-                              onValueChange={(v) => setProductForm({ ...productForm, categoryId: v })}
+                              value={productForm.categoryId || ""}
+                              onValueChange={(v) =>
+                                setProductForm({
+                                  ...productForm,
+                                  categoryId: v,
+                                })
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="اختر القسم" />
                               </SelectTrigger>
                               <SelectContent>
-                                {categoriesQuery.data?.map((cat) => (
+                                {categoriesQuery.data?.map((cat: any) => (
                                   <SelectItem key={cat.id} value={cat.id.toString()}>
                                     {cat.nameAr}
                                   </SelectItem>
@@ -672,8 +674,24 @@ export default function SellerDashboard() {
                             </Select>
                           </div>
                         </div>
+
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setProductDialogOpen(false);
+                              setEditingProduct(null);
+                              setProductForm({
+                                title: "",
+                                description: "",
+                                price: "",
+                                stock: "",
+                                categoryId: "",
+                                images: [],
+                                video: "",
+                              });
+                            }}
+                          >
                             إلغاء
                           </Button>
                           <Button
@@ -690,7 +708,7 @@ export default function SellerDashboard() {
 
                   {/* Products Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {productsQuery.data?.products.map((product) => (
+                    {productsQuery.data?.products.map((product: any) => (
                       <Card key={product.id} className="border-amber-200 bg-white/80 backdrop-blur-lg overflow-hidden">
                         <div className="h-40 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
                           <Package className="w-16 h-16 text-amber-300" />
@@ -749,7 +767,7 @@ export default function SellerDashboard() {
                   <h1 className="text-2xl font-bold text-amber-800">الطلبات</h1>
 
                   <div className="space-y-4">
-                    {ordersQuery.data?.orders.map((order) => (
+                    {ordersQuery.data?.orders.map((order: any) => (
                       <Card key={order.id} className="border-amber-200 bg-white/80 backdrop-blur-lg">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -911,7 +929,7 @@ export default function SellerDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {paymentMethodsQuery.data?.map((method) => (
+                    {paymentMethodsQuery.data?.map((method: any) => (
                       <Card key={method.id} className="border-amber-200 bg-white/80 backdrop-blur-lg">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">

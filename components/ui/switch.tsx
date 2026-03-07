@@ -2,6 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  id?: string;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   disabled?: boolean;

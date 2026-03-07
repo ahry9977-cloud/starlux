@@ -29,8 +29,9 @@ export function Dialog({
 export function DialogTrigger({
   className,
   children,
+  asChild,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>): React.JSX.Element {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }): React.JSX.Element {
   const ctx = useContext(DialogContext);
   return (
     <button
@@ -47,15 +48,20 @@ export function DialogTrigger({
 export function DialogContent({
   className,
   children,
+  dir,
 }: {
   className?: string;
   children: React.ReactNode;
+  dir?: React.HTMLAttributes<HTMLDivElement>["dir"];
 }): React.JSX.Element | null {
   const ctx = useContext(DialogContext);
   if (!ctx?.open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className={cn("w-full max-w-lg rounded-xl border border-slate-800 bg-slate-950 p-4 text-white", className)}>
+      <div
+        dir={dir}
+        className={cn("w-full max-w-lg rounded-xl border border-slate-800 bg-slate-950 p-4 text-white", className)}
+      >
         {children}
       </div>
     </div>

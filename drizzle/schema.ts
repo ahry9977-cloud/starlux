@@ -1,241 +1,385 @@
 import {
-  mysqlTable,
+  pgTable,
   serial,
   varchar,
   boolean,
-  int,
+  integer,
   timestamp,
   text,
-  double,
+  doublePrecision,
   uniqueIndex,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 
-export const users = mysqlTable("users", {
+export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull(),
-  passwordHash: text("passwordHash").notNull(),
+  passwordHash: text("passwordhash").notNull(),
   name: varchar("name", { length: 255 }),
   role: varchar("role", { length: 50 }).notNull().default("user"),
-  isVerified: boolean("isVerified").notNull().default(false),
-  isBlocked: boolean("isBlocked").notNull().default(false),
-  failedLoginAttempts: int("failedLoginAttempts").notNull().default(0),
-  lockedUntil: timestamp("lockedUntil"),
-  lastSignedIn: timestamp("lastSignedIn"),
-  phoneNumber: varchar("phoneNumber", { length: 50 }),
-  profileImage: text("profileImage"),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow(),
+  isVerified: boolean("isverified").notNull().default(false),
+  isBlocked: boolean("isblocked").notNull().default(false),
+  failedLoginAttempts: integer("failedloginattempts").notNull().default(0),
+  lockedUntil: timestamp("lockeduntil", { withTimezone: true }),
+  lastSignedIn: timestamp("lastsignedin", { withTimezone: true }),
+  phoneNumber: varchar("phonenumber", { length: 50 }),
+  profileImage: text("profileimage"),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
 });
 
 export type User = typeof users.$inferSelect;
 
-export const stores = mysqlTable("stores", {
+export const stores = pgTable("stores", {
   id: serial("id").primaryKey(),
-  sellerId: int("sellerId").notNull(),
+  sellerId: integer("sellerid").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 255 }).notNull(),
   description: text("description"),
   logo: text("logo"),
   banner: text("banner"),
-  isVerified: boolean("isVerified").notNull().default(false),
-  isActive: boolean("isActive").notNull().default(true),
-  rating: double("rating"),
-  totalReviews: int("totalReviews").default(0),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow(),
+  isVerified: boolean("isverified").notNull().default(false),
+  isActive: boolean("isactive").notNull().default(true),
+  rating: doublePrecision("rating"),
+  totalReviews: integer("totalreviews").default(0),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
 });
 
-export const otpVerifications = mysqlTable("otpVerifications", {
+export const otpVerifications = pgTable("otpverifications", {
   id: serial("id").primaryKey(),
-  phoneNumber: varchar("phoneNumber", { length: 50 }).notNull(),
-  countryCode: varchar("countryCode", { length: 10 }),
+  phoneNumber: varchar("phonenumber", { length: 50 }).notNull(),
+  countryCode: varchar("countrycode", { length: 10 }),
   otp: varchar("otp", { length: 10 }).notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  isUsed: boolean("isUsed").notNull().default(false),
-  createdAt: timestamp("createdAt").defaultNow(),
+  expiresAt: timestamp("expiresat", { withTimezone: true }).notNull(),
+  isUsed: boolean("isused").notNull().default(false),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const passwordResets = mysqlTable("passwordResets", {
+export const passwordResets = pgTable("passwordresets", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull(),
   otp: varchar("otp", { length: 10 }),
-  isUsed: boolean("isUsed").notNull().default(false),
-  createdAt: timestamp("createdAt").defaultNow(),
+  isUsed: boolean("isused").notNull().default(false),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const roles = mysqlTable("roles", {
+export const roles = pgTable("roles", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  displayName: varchar("displayName", { length: 150 }).notNull(),
+  displayName: varchar("displayname", { length: 150 }).notNull(),
   description: text("description"),
   color: varchar("color", { length: 16 }),
   icon: varchar("icon", { length: 64 }),
-  priority: int("priority").notNull().default(0),
-  isSystem: boolean("isSystem").notNull().default(false),
-  isActive: boolean("isActive").notNull().default(true),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow(),
+  priority: integer("priority").notNull().default(0),
+  isSystem: boolean("issystem").notNull().default(false),
+  isActive: boolean("isactive").notNull().default(true),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
 });
 
 export type Role = typeof roles.$inferSelect;
 export type InsertRole = typeof roles.$inferInsert;
 
-export const permissions = mysqlTable("permissions", {
+export const permissions = pgTable("permissions", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
-  displayName: varchar("displayName", { length: 150 }).notNull(),
+  displayName: varchar("displayname", { length: 150 }).notNull(),
   description: text("description"),
   category: varchar("category", { length: 50 }).notNull(),
   action: varchar("action", { length: 50 }).notNull(),
-  requiresApproval: boolean("requiresApproval").notNull().default(false),
-  riskLevel: varchar("riskLevel", { length: 16 }),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow(),
+  requiresApproval: boolean("requiresapproval").notNull().default(false),
+  riskLevel: varchar("risklevel", { length: 16 }),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
 });
 
 export type Permission = typeof permissions.$inferSelect;
 export type InsertPermission = typeof permissions.$inferInsert;
 
-export const rolePermissions = mysqlTable("rolePermissions", {
+export const rolePermissions = pgTable("rolepermissions", {
   id: serial("id").primaryKey(),
-  roleId: int("roleId").notNull(),
-  permissionId: int("permissionId").notNull(),
+  roleId: integer("roleid").notNull(),
+  permissionId: integer("permissionid").notNull(),
   granted: boolean("granted").notNull().default(true),
-  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  grantedAt: timestamp("grantedat", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = typeof rolePermissions.$inferInsert;
 
-export const userRoles = mysqlTable("userRoles", {
+export const userRoles = pgTable("userroles", {
   id: serial("id").primaryKey(),
-  userId: int("userId").notNull(),
-  roleId: int("roleId").notNull(),
-  isPrimary: boolean("isPrimary").notNull().default(false),
-  expiresAt: timestamp("expiresAt"),
+  userId: integer("userid").notNull(),
+  roleId: integer("roleid").notNull(),
+  isPrimary: boolean("isprimary").notNull().default(false),
+  expiresAt: timestamp("expiresat", { withTimezone: true }),
   notes: text("notes"),
-  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+  grantedAt: timestamp("grantedat", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserRole = typeof userRoles.$inferInsert;
 
-export const userPermissions = mysqlTable("userPermissions", {
+export const userPermissions = pgTable("userpermissions", {
   id: serial("id").primaryKey(),
-  userId: int("userId").notNull(),
-  permissionId: int("permissionId").notNull(),
+  userId: integer("userid").notNull(),
+  permissionId: integer("permissionid").notNull(),
   granted: boolean("granted").notNull().default(true),
-  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+  grantedAt: timestamp("grantedat", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertUserPermission = typeof userPermissions.$inferInsert;
 
-export const roleAuditLogs = mysqlTable("roleAuditLogs", {
+export const roleAuditLogs = pgTable("roleauditlogs", {
   id: serial("id").primaryKey(),
   action: varchar("action", { length: 100 }).notNull(),
-  entityType: varchar("entityType", { length: 50 }).notNull(),
-  entityId: int("entityId"),
-  oldData: text("oldData"),
-  newData: text("newData"),
-  changedBy: int("changedBy"),
-  ipAddress: varchar("ipAddress", { length: 50 }),
-  userAgent: text("userAgent"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  entityType: varchar("entitytype", { length: 50 }).notNull(),
+  entityId: integer("entityid"),
+  oldData: text("olddata"),
+  newData: text("newdata"),
+  changedBy: integer("changedby"),
+  ipAddress: varchar("ipaddress", { length: 50 }),
+  userAgent: text("useragent"),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
 export type InsertRoleAuditLog = typeof roleAuditLogs.$inferInsert;
 
-export const notifications = mysqlTable("notifications", {
+export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: int("userId").notNull(),
+  userId: integer("userid").notNull(),
   type: varchar("type", { length: 100 }).notNull(),
   title: varchar("title", { length: 255 }),
   message: text("message"),
-  isRead: boolean("isRead").notNull().default(false),
-  createdAt: timestamp("createdAt").defaultNow(),
+  isRead: boolean("isread").notNull().default(false),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const notificationQueue = mysqlTable("notificationQueue", {
+export const notificationQueue = pgTable("notificationqueue", {
   id: serial("id").primaryKey(),
-  notificationId: int("notificationId").notNull(),
+  notificationId: integer("notificationid").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const notificationSettings = mysqlTable("notificationSettings", {
+export const notificationSettings = pgTable("notificationsettings", {
   id: serial("id").primaryKey(),
-  userId: int("userId").notNull(),
+  userId: integer("userid").notNull(),
   category: varchar("category", { length: 50 }).notNull(),
   enabled: boolean("enabled").notNull().default(true),
-  createdAt: timestamp("createdAt").defaultNow(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const notificationLogs = mysqlTable("notificationLogs", {
+export const notificationLogs = pgTable("notificationlogs", {
   id: serial("id").primaryKey(),
-  notificationId: int("notificationId"),
+  notificationId: integer("notificationid"),
   status: varchar("status", { length: 50 }).notNull(),
   error: text("error"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const supportedCurrencies = mysqlTable("supportedCurrencies", {
+export const supportedCurrencies = pgTable("supportedcurrencies", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 10 }).notNull(),
   name: varchar("name", { length: 100 }),
   symbol: varchar("symbol", { length: 10 }),
-  isActive: boolean("isActive").notNull().default(true),
+  isActive: boolean("isactive").notNull().default(true),
 });
 
-export const currencyConversions = mysqlTable("currencyConversions", {
+export const currencyConversions = pgTable("currencyconversions", {
   id: serial("id").primaryKey(),
-  fromCode: varchar("fromCode", { length: 10 }).notNull(),
-  toCode: varchar("toCode", { length: 10 }).notNull(),
-  rate: double("rate").notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow(),
+  fromCode: varchar("fromcode", { length: 10 }).notNull(),
+  toCode: varchar("tocode", { length: 10 }).notNull(),
+  rate: doublePrecision("rate").notNull(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
 });
 
-export const sellerWallet = mysqlTable(
-  "sellerWallet",
+export const sellerWallet = pgTable(
+  "sellerwallet",
   {
     id: serial("id").primaryKey(),
-    sellerId: int("sellerId").notNull(),
-    balance: double("balance").notNull().default(0),
+    sellerId: integer("sellerid").notNull(),
+    balance: doublePrecision("balance").notNull().default(0),
     currency: varchar("currency", { length: 10 }).notNull().default("USD"),
-    updatedAt: timestamp("updatedAt").defaultNow(),
+    updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
   },
   (t) => ({
     sellerIdUnique: uniqueIndex("sellerWallet_sellerId_unique").on(t.sellerId),
   })
 );
 
-export const commissionLogs = mysqlTable("commissionLogs", {
+export const commissionLogs = pgTable("commissionlogs", {
   id: serial("id").primaryKey(),
-  sellerId: int("sellerId"),
-  amount: double("amount").notNull().default(0),
-  createdAt: timestamp("createdAt").defaultNow(),
+  sellerId: integer("sellerid"),
+  amount: doublePrecision("amount").notNull().default(0),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const sellerWithdrawals = mysqlTable("sellerWithdrawals", {
+export const sellerWithdrawals = pgTable("sellerwithdrawals", {
   id: serial("id").primaryKey(),
-  sellerId: int("sellerId").notNull(),
-  amount: double("amount").notNull(),
+  sellerId: integer("sellerid").notNull(),
+  amount: doublePrecision("amount").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const platformCommissionRevenue = mysqlTable("platformCommissionRevenue", {
+export const platformCommissionRevenue = pgTable("platformcommissionrevenue", {
   id: serial("id").primaryKey(),
-  amount: double("amount").notNull().default(0),
-  createdAt: timestamp("createdAt").defaultNow(),
+  amount: doublePrecision("amount").notNull().default(0),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
-export const sessions = mysqlTable("sessions", {
+export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
-  userId: int("userId").notNull(),
+  userId: integer("userid").notNull(),
   token: text("token"),
-  expiresAt: timestamp("expiresAt"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  expiresAt: timestamp("expiresat", { withTimezone: true }),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+});
+
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  nameAr: varchar("namear", { length: 255 }).notNull(),
+  nameEn: varchar("nameen", { length: 255 }).notNull(),
+  icon: varchar("icon", { length: 255 }),
+  description: text("description"),
+  parentId: integer("parentid"),
+  isFeatured: boolean("isfeatured").notNull().default(false),
+  isActive: boolean("isactive").notNull().default(true),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+});
+
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  storeId: integer("storeid").notNull(),
+  categoryId: integer("categoryid").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  price: doublePrecision("price").notNull(),
+  stock: integer("stock").notNull().default(0),
+  images: text("images"),
+  video: text("video"),
+  isActive: boolean("isactive").notNull().default(true),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+});
+
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  buyerId: integer("buyerid").notNull(),
+  storeId: integer("storeid").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  totalAmount: doublePrecision("totalamount").notNull(),
+  commission: doublePrecision("commission").notNull().default(0),
+  sellerAmount: doublePrecision("selleramount").notNull().default(0),
+  paymentMethod: varchar("paymentmethod", { length: 50 }).notNull(),
+  paymentStatus: varchar("paymentstatus", { length: 50 }).notNull().default("pending"),
+  shippingAddress: text("shippingaddress"),
+  notes: text("notes"),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+});
+
+export const orderItems = pgTable("orderitems", {
+  id: serial("id").primaryKey(),
+  orderId: integer("orderid").notNull(),
+  productId: integer("productid").notNull(),
+  quantity: integer("quantity").notNull(),
+  price: doublePrecision("price").notNull(),
+  total: doublePrecision("total").notNull(),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+});
+
+export const cartItems = pgTable(
+  "cartitems",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("userid").notNull(),
+    productId: integer("productid").notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userProductUnique: uniqueIndex("cartItems_user_product_unique").on(t.userId, t.productId),
+  })
+);
+
+export const sellerPaymentMethods = pgTable("sellerpaymentmethods", {
+  id: serial("id").primaryKey(),
+  storeId: integer("storeid").notNull(),
+  methodType: varchar("methodtype", { length: 50 }).notNull(),
+  accountDetails: text("accountdetails"),
+  isActive: boolean("isactive").notNull().default(true),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+});
+
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  orderId: integer("orderid").notNull(),
+  buyerId: integer("buyerid").notNull(),
+  sellerId: integer("sellerid"),
+  storeId: integer("storeid").notNull(),
+  method: varchar("method", { length: 50 }).notNull(),
+  amount: doublePrecision("amount").notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  providerRef: varchar("providerref", { length: 255 }),
+  createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+});
+
+export const productReviews = pgTable(
+  "product_reviews",
+  {
+    id: serial("id").primaryKey(),
+    productId: integer("product_id").notNull(),
+    userId: integer("user_id").notNull(),
+    rating: doublePrecision("rating").notNull(),
+    reviewText: text("review_text"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userProductUnique: uniqueIndex("product_reviews_user_product_unique").on(t.userId, t.productId),
+  })
+);
+
+export const shares = pgTable("shares", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id"),
+  storeId: integer("store_id"),
+  userId: integer("user_id"),
+  platform: varchar("platform", { length: 32 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const productViews = pgTable("product_views", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  productId: integer("product_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const userSearchHistory = pgTable("user_search_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  query: varchar("query", { length: 500 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const chatConversations = pgTable("chat_conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  role: varchar("role", { length: 16 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

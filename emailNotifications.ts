@@ -4,7 +4,8 @@
  */
 
 import { users } from "./drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq } from 'drizzle-orm';
+import { getDb } from './db';
 
 type EmailOptions = {
   to: string;
@@ -339,7 +340,7 @@ export async function sendEmail(
     // تسجيل الإرسال
     const db = await getDb();
     if (db) {
-      const { notificationLogs } = await import('../drizzle/schema');
+      const { notificationLogs } = await import('./drizzle/schema');
       await db.insert(notificationLogs).values({
         notificationId: 0,
         userId: 0,
@@ -366,7 +367,7 @@ export async function notifyUserByEmail(
     const db = await getDb();
     if (!db) return false;
 
-    const { users, notificationSettings } = await import('../drizzle/schema');
+    const { users, notificationSettings } = await import('./drizzle/schema');
     
     // جلب بيانات المستخدم
     const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);

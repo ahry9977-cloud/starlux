@@ -8,9 +8,9 @@
  */
 
 import React, { memo, useState, useCallback, useEffect } from 'react';
-import { useSound } from '../../hooks/useSound';
-import { playSound } from '../../lib/soundSystem';
-import { cn } from '../../lib/utils';
+import { useSound } from './useSound';
+import { playSound } from '@/lib/soundSystem';
+import { cn } from '@/lib/utils';
 
 interface SoundSettingsProps {
   className?: string;

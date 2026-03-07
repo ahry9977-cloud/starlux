@@ -9,8 +9,8 @@
  */
 
 import React, { memo, useCallback, forwardRef } from 'react';
-import { playSound, type SoundType } from '../../lib/soundSystem';
-import { cn } from '../../lib/utils';
+import { playSound, type SoundType } from '@/lib/soundSystem';
+import { cn } from '@/lib/utils';
 
 // أنواع الأزرار وأصواتها
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';

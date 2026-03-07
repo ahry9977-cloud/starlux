@@ -175,7 +175,7 @@ const PasswordStrength = ({ password }: { password: string }) => {
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
-  const { user, loading: authLoading, refresh } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   // Form state
   const [email, setEmail] = useState("");
@@ -236,8 +236,7 @@ export default function LoginPage() {
   }, [user, authLoading, setLocation]);
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: async (data) => {
-      await refresh();
+    onSuccess: (data) => {
       const role = data.role;
       if (role === "admin" || role === "sub_admin") {
         setLocation("/admin-dashboard");

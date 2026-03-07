@@ -1,1 +1,1 @@
-export { default } from "../UltraFastLogin";
+export { default } from "../PremiumLogin";

@@ -24,6 +24,7 @@ const SellerRegisterPage = lazy(() => import("./pages/SellerRegisterPage"));
 const Explore = lazy(() => import("./pages/Explore"));
 const Categories = lazy(() => import("./pages/Categories"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Store = lazy(() => import("./pages/Store"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -94,6 +95,7 @@ function Router() {
       <Route path={"/explore"} component={Explore} />
       <Route path={"/categories"} component={Categories} />
       <Route path={"/product/:id"} component={ProductDetail} />
+      <Route path={"/store/:id"} component={Store} />
       
       {/* الصفحات الثابتة */}
       <Route path={"/about"} component={AboutPage} />

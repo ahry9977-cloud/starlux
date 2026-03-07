@@ -5,9 +5,13 @@ type Ctx = { open: string | null; toggle: (v: string) => void };
 const AccordionContext = createContext<Ctx | null>(null);
 
 export function Accordion({
+  type,
+  collapsible,
   className,
   children,
 }: {
+  type?: "single" | "multiple";
+  collapsible?: boolean;
   className?: string;
   children: React.ReactNode;
 }): React.JSX.Element {

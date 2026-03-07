@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { EnhancedMotionBackground } from "@/components/backgrounds/EnhancedMotionBackground";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -55,6 +55,51 @@ export default function Home() {
 
   // جلب الأقسام مع الفرعية
   const { data: categoriesData } = trpc.products.getCategoriesHierarchy.useQuery();
+
+  // جلب أحدث المنتجات للصفحة الرئيسية
+  const { data: latestProducts } = trpc.products.getAll.useQuery({ limit: 12, offset: 0 });
+
+  const { data: trendingData } = trpc.products.getTrending.useQuery({ limit: 12 });
+  const recommendedQuery = trpc.products.getRecommended.useQuery(
+    { limit: 12 },
+    { enabled: Boolean(isAuthenticated) }
+  );
+
+  const topSharedQuery = trpc.sharing.topSharedProducts.useQuery({ limit: 8 });
+
+  const buyNowMutation = trpc.cart.buyNow.useMutation();
+  const shareMutation = trpc.sharing.track.useMutation();
+
+  const orderedCategories = useMemo(() => {
+    const list = (categoriesData ?? []) as any[];
+    const nameKey = language === "ar-IQ" ? "nameAr" : "nameEn";
+    return [...list].sort((a, b) => {
+      const aFeatured = Boolean(a?.isFeatured);
+      const bFeatured = Boolean(b?.isFeatured);
+      if (aFeatured !== bFeatured) return aFeatured ? -1 : 1;
+
+      const aSubs = Number(a?.subcategories?.length ?? 0);
+      const bSubs = Number(b?.subcategories?.length ?? 0);
+      if (aSubs !== bSubs) return bSubs - aSubs;
+
+      const aName = String(a?.[nameKey] ?? "");
+      const bName = String(b?.[nameKey] ?? "");
+      return aName.localeCompare(bName);
+    });
+  }, [categoriesData, language]);
+
+  const homeProducts = useMemo(() => {
+    return (((latestProducts as any)?.products ?? []) as any[]).map((p) => {
+      if (typeof p?.images === "string") {
+        try {
+          return { ...p, images: JSON.parse(p.images) };
+        } catch {
+          return { ...p, images: [] };
+        }
+      }
+      return p;
+    });
+  }, [latestProducts]);
 
   // SEO Meta Tags
   const seoData = {
@@ -238,6 +283,176 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Latest Products */}
+        <section className="container mx-auto px-4 !py-24 md:!py-28 lg:!py-32">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">
+              {language === "ar-IQ" ? "أحدث المنتجات" : "Latest Products"}
+            </h2>
+            <Button variant="outline" onClick={() => navigate("/explore")}>
+              {language === "ar-IQ" ? "عرض الكل" : "View All"}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {homeProducts.map((product: any) => {
+              const img = Array.isArray(product.images) ? product.images[0] : undefined;
+              return (
+                <Card
+                  key={product.id}
+                  className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
+                  onClick={() => navigate(`/product/${product.id}`)}
+                >
+                  <div className="h-40 bg-muted flex items-center justify-center">
+                    {img ? (
+                      <img src={img} alt={product.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <ShoppingCart className="w-10 h-10 text-muted-foreground" />
+                    )}
+                  </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
+                    <CardDescription className="text-sm line-clamp-1">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold">${Number(product.price ?? 0)}</p>
+                      <p className="text-xs text-muted-foreground">{language === "ar-IQ" ? `المخزون: ${product.stock ?? 0}` : `Stock: ${product.stock ?? 0}`}</p>
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!isAuthenticated) {
+                            navigate("/auth");
+                            return;
+                          }
+                          try {
+                            const res = await buyNowMutation.mutateAsync({
+                              productId: Number(product.id),
+                              quantity: 1,
+                              paymentMethod: "visa",
+                            });
+                            if ((res as any)?.orderId) {
+                              navigate(
+                                `/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`
+                              );
+                            }
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                      >
+                        {language === "ar-IQ" ? "شراء الآن" : "Buy Now"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const url = `${window.location.origin}/product/${product.id}`;
+                          try {
+                            await navigator.clipboard.writeText(url);
+                            await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product.id) });
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                      >
+                        {language === "ar-IQ" ? "مشاركة" : "Share"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {isAuthenticated && Array.isArray((recommendedQuery.data as any)?.products) && (recommendedQuery.data as any).products.length > 0 && (
+            <div className="mt-14">
+              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "مقترح لك" : "Recommended for you"}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(((recommendedQuery.data as any)?.products ?? []) as any[]).slice(0, 8).map((product: any) => (
+                  <Card
+                    key={`rec-${product.id}`}
+                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
+                      <CardDescription className="text-sm line-clamp-1">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold">${Number(product.price ?? 0)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Array.isArray((trendingData as any)?.products) && (trendingData as any).products.length > 0 && (
+            <div className="mt-14">
+              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر رواجاً" : "Trending products"}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(((trendingData as any)?.products ?? []) as any[]).slice(0, 8).map((product: any) => (
+                  <Card
+                    key={`trend-${product.id}`}
+                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
+                      <CardDescription className="text-sm line-clamp-1">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold">${Number(product.price ?? 0)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Array.isArray((topSharedQuery.data as any)?.items) && (topSharedQuery.data as any).items.length > 0 && (
+            <div className="mt-14">
+              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر مشاركة" : "Most shared"}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(((topSharedQuery.data as any)?.items ?? []) as any[]).slice(0, 8).map((item: any) => (
+                  <Card
+                    key={`shared-${item.product?.id ?? item.productId}`}
+                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
+                    onClick={() => navigate(`/product/${item.product?.id ?? item.productId}`)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base line-clamp-1">{item.product?.title ?? (language === "ar-IQ" ? "منتج" : "Product")}</CardTitle>
+                      <CardDescription className="text-sm line-clamp-1">{language === "ar-IQ" ? `عدد المشاركات: ${item.sharesCount ?? 0}` : `Shares: ${item.sharesCount ?? 0}`}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold">${Number(item.product?.price ?? 0)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {homeProducts.length === 0 && (
+            <div className="py-12 text-center text-muted-foreground">
+              {language === "ar-IQ" ? "لا توجد منتجات حالياً" : "No products yet"}
+            </div>
+          )}
+        </section>
+
         {/* Categories Section */}
         <section className="bg-card/30 !py-24 md:!py-28 lg:!py-32 border-y border-border">
           <div className="container mx-auto px-4">
@@ -246,7 +461,7 @@ export default function Home() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {categoriesData?.map((category) => (
+              {orderedCategories.map((category) => (
                 <Card 
                   key={category.id} 
                   className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer group"

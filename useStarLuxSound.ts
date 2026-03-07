@@ -29,7 +29,7 @@ import {
   type StarLuxSoundType,
   type ElementSoundType,
   getSoundForElement
-} from '../lib/starLuxAudioManager';
+} from '@/lib/starLuxAudioManager';
 
 /**
  * Main hook for Star Lux sounds

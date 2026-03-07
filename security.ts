@@ -25,6 +25,8 @@ export const isValidEmail = (email: string): boolean => {
   return emailRegex.test(trimmed);
 };
 
+export const validateEmail = isValidEmail;
+
 /**
  * التحقق من قوة كلمة المرور
  */
@@ -40,6 +42,10 @@ export const isStrongPassword = (password: string): { valid: boolean; message: s
 
   return { valid: true, message: 'كلمة المرور قوية' };
 };
+
+export const validatePassword = isStrongPassword;
+
+export const sanitizeInput = sanitizeString;
 
 /**
  * تنظيف المدخلات من الاستعلامات SQL
@@ -75,21 +81,6 @@ export const isSuspiciousInput = (input: string): boolean => {
  */
 export const generateCSRFToken = (): string => {
   return randomBytes(32).toString('hex');
-};
-
-/**
- * التحقق من قوة كلمة المرور
- */
-export const validatePassword = (password: string): boolean => {
-  return isStrongPassword(password).valid;
-};
-
-/**
- * تنظيف المدخلات
- */
-export const sanitizeInput = (input: string): string => {
-  if (typeof input !== 'string') return '';
-  return sanitizeString(input);
 };
 
 /**

@@ -118,7 +118,7 @@ export async function deleteRole(roleId: number): Promise<void> {
 export async function getAllPermissions(): Promise<Permission[]> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  return db.select().from(permissions).where(eq(permissions.isActive, true));
+  return db.select().from(permissions);
 }
 
 /**
@@ -128,10 +128,7 @@ export async function getPermissionsByCategory(category: string): Promise<Permis
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   return db.select().from(permissions).where(
-    and(
-      eq(permissions.category, category),
-      eq(permissions.isActive, true)
-    )
+    eq(permissions.category, category)
   );
 }
 

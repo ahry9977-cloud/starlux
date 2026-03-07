@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Loader2, ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, 
-  Star, PenLine, Truck, Shield, RefreshCw, ArrowRight, Store
+  Star, PenLine, Truck, Shield, RefreshCw, ArrowRight, Store, CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,6 +58,27 @@ export default function ProductDetail() {
       toast.error(error.message || 'حدث خطأ');
     },
   });
+
+  const buyNowMutation = trpc.cart.buyNow.useMutation({
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
+  const shareMutation = trpc.sharing.track.useMutation();
+
+  const logViewMutation = trpc.products.logView.useMutation();
+
+  const { data: similarData } = trpc.products.getSimilar.useQuery(
+    { productId, limit: 8 },
+    { enabled: productId > 0 }
+  );
+
+  useEffect(() => {
+    if (!productId) return;
+    logViewMutation.mutate({ productId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
   
   // إضافة تقييم
   const addRatingMutation = trpc.ratings.addRating.useMutation({
@@ -127,7 +148,43 @@ export default function ProductDetail() {
   const images = product.images || [];
   const summary = ratingsData?.summary;
   const topReviews = ratingsData?.ratings || [];
-  
+
+  const handleShare = async (platform: 'whatsapp' | 'telegram' | 'facebook' | 'twitter' | 'copy_link') => {
+    const url = `${window.location.origin}/product/${productId}`;
+    const text = `${product.title}`;
+
+    try {
+      if (platform === 'copy_link') {
+        await navigator.clipboard.writeText(url);
+        await shareMutation.mutateAsync({ platform, productId });
+        toast.success('تم نسخ رابط المنتج');
+        return;
+      }
+
+      const shareUrl = (() => {
+        const u = encodeURIComponent(url);
+        const t = encodeURIComponent(text);
+        switch (platform) {
+          case 'whatsapp':
+            return `https://wa.me/?text=${t}%20${u}`;
+          case 'telegram':
+            return `https://t.me/share/url?url=${u}&text=${t}`;
+          case 'facebook':
+            return `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+          case 'twitter':
+            return `https://twitter.com/intent/tweet?url=${u}&text=${t}`;
+          default:
+            return '';
+        }
+      })();
+
+      if (shareUrl) window.open(shareUrl, '_blank', 'noopener,noreferrer');
+      await shareMutation.mutateAsync({ platform, productId });
+    } catch {
+      toast.error('تعذر المشاركة');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* رأس الصفحة */}
@@ -183,7 +240,7 @@ export default function ProductDetail() {
             {/* الصور المصغرة */}
             {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {images.map((image, index) => (
+                {images.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
@@ -209,9 +266,25 @@ export default function ProductDetail() {
                   <Button variant="ghost" size="icon">
                     <Heart className="w-5 h-5" />
                   </Button>
-                  <Button variant="ghost" size="icon">
-                    <Share2 className="w-5 h-5" />
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Share2 className="w-5 h-5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>مشاركة المنتج</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" onClick={() => handleShare('whatsapp')}>WhatsApp</Button>
+                        <Button variant="outline" onClick={() => handleShare('telegram')}>Telegram</Button>
+                        <Button variant="outline" onClick={() => handleShare('facebook')}>Facebook</Button>
+                        <Button variant="outline" onClick={() => handleShare('twitter')}>X</Button>
+                        <Button className="col-span-2" onClick={() => handleShare('copy_link')}>نسخ الرابط</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
               
@@ -298,6 +371,30 @@ export default function ProductDetail() {
                 )}
                 أضف للسلة
               </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="gap-2"
+                onClick={async () => {
+                  if (!user) {
+                    toast.error('يجب تسجيل الدخول أولاً');
+                    return;
+                  }
+                  const res = await buyNowMutation.mutateAsync({
+                    productId,
+                    quantity,
+                    paymentMethod: 'visa',
+                  });
+                  if ((res as any)?.orderId) {
+                    setLocation(`/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`);
+                  }
+                }}
+                disabled={buyNowMutation.isPending}
+              >
+                {buyNowMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                شراء الآن
+              </Button>
             </div>
             
             {/* المميزات */}
@@ -332,7 +429,7 @@ export default function ProductDetail() {
                   <h4 className="font-semibold">المتجر</h4>
                   <p className="text-sm text-muted-foreground">متجر موثق</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setLocation(`/store/${product.storeId}`)}>
                   زيارة المتجر
                 </Button>
               </div>
@@ -456,6 +553,25 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {Array.isArray((similarData as any)?.products) && (similarData as any).products.length > 0 && (
+        <div className="container pb-12">
+          <h2 className="text-2xl font-bold mb-4">منتجات مشابهة</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(((similarData as any)?.products ?? []) as any[]).slice(0, 8).map((p: any) => (
+              <button
+                key={`sim-${p.id}`}
+                onClick={() => setLocation(`/product/${p.id}`)}
+                className="text-left bg-card border border-border rounded-xl p-4 hover:bg-card/80 transition"
+              >
+                <div className="font-semibold line-clamp-1">{p.title}</div>
+                <div className="text-sm text-muted-foreground line-clamp-2 mt-1">{p.description || ''}</div>
+                <div className="mt-3 font-bold text-primary">{Number(p.price ?? 0).toLocaleString('ar-EG')} د.ع</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

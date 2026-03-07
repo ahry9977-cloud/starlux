@@ -20,22 +20,76 @@ export function useSidebar() {
   return ctx;
 }
 
-export function Sidebar({ children }: { children: React.ReactNode }) { return <aside className="w-[var(--sidebar-width,280px)]">{children}</aside>; }
-export function SidebarHeader({ children }: { children: React.ReactNode }) { return <div className="p-3 border-b border-white/10">{children}</div>; }
-export function SidebarContent({ children }: { children: React.ReactNode }) { return <div className="p-2">{children}</div>; }
-export function SidebarFooter({ children }: { children: React.ReactNode }) { return <div className="p-3 border-t border-white/10">{children}</div>; }
-export function SidebarInset({ children }: { children: React.ReactNode }) { return <main className="min-h-screen">{children}</main>; }
-
-export function SidebarTrigger({ children }: { children?: React.ReactNode }) {
-  const { toggleSidebar } = useSidebar();
-  return <button type="button" onClick={toggleSidebar}>{children ?? "Toggle"}</button>;
+export function Sidebar({
+  children,
+  className,
+  collapsible,
+  disableTransition,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  collapsible?: string;
+  disableTransition?: boolean;
+}) {
+  return <aside className={className ?? "w-[var(--sidebar-width,280px)]"}>{children}</aside>;
 }
 
-export function SidebarMenu({ children }: { children: React.ReactNode }) { return <nav className="space-y-1">{children}</nav>; }
-export function SidebarMenuItem({ children }: { children: React.ReactNode }) { return <div>{children}</div>; }
-export function SidebarMenuButton({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+export function SidebarHeader({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={className ?? "p-3 border-b border-white/10"}>{children}</div>;
+}
+
+export function SidebarContent({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={className ?? "p-2"}>{children}</div>;
+}
+
+export function SidebarFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={className ?? "p-3 border-t border-white/10"}>{children}</div>;
+}
+
+export function SidebarInset({ children }: { children: React.ReactNode }) {
+  return <main className="min-h-screen">{children}</main>;
+}
+
+export function SidebarTrigger({ children, className }: { children?: React.ReactNode; className?: string }) {
+  const { toggleSidebar } = useSidebar();
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-2 rounded px-2 py-2 hover:bg-white/10 text-left">
+    <button type="button" onClick={toggleSidebar} className={className}>
+      {children ?? "Toggle"}
+    </button>
+  );
+}
+
+export function SidebarMenu({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <nav className={className ?? "space-y-1"}>{children}</nav>;
+}
+
+export function SidebarMenuItem({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>;
+}
+
+export function SidebarMenuButton({
+  children,
+  onClick,
+  className,
+  isActive,
+  tooltip,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  isActive?: boolean;
+  tooltip?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={tooltip}
+      className={
+        className ??
+        `w-full flex items-center gap-2 rounded px-2 py-2 hover:bg-white/10 text-left ${isActive ? "bg-white/10" : ""}`
+      }
+    >
       {children}
     </button>
   );

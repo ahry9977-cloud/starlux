@@ -135,7 +135,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               }}
             />
             <span style={{ fontWeight: 600 }}>
-              {isExpanded ? statusText : `${metrics.fcp.toFixed(0)}ms`}
+              {isExpanded ? statusText : `${Number((metrics as any).fcp ?? 0).toFixed(0)}ms`}
             </span>
           </div>
           
@@ -159,7 +159,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         {isExpanded && (
           <div style={{ marginTop: 12 }}>
             <div style={{ display: 'grid', gap: 8 }}>
-              {check.details.map(detail => (
+              {check.details.map((detail: any) => (
                 <div key={detail.metric} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'rgba(255,255,255,0.7)' }}>{detail.metric}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -182,7 +182,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>الأداء العام</span>
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>
-                  {check.details.filter(d => d.passed).length}/{check.details.length}
+                  {check.details.filter((d: any) => d.passed).length}/{check.details.length}
                 </span>
               </div>
               <div style={{ 
@@ -193,7 +193,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               }}>
                 <div style={{
                   height: '100%',
-                  width: `${(check.details.filter(d => d.passed).length / check.details.length) * 100}%`,
+                  width: `${(check.details.filter((d: any) => d.passed).length / check.details.length) * 100}%`,
                   background: statusColor,
                   transition: 'width 0.3s ease'
                 }} />

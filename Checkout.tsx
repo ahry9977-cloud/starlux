@@ -178,7 +178,7 @@ export default function CheckoutPage() {
     }
 
     await checkoutMutation.mutateAsync({
-      paymentMethod: selectedPayment,
+      paymentMethod: selectedPayment as any,
       shippingAddress: shippingForm,
       notes: notes || undefined,
     });
@@ -277,7 +277,7 @@ export default function CheckoutPage() {
                 animated={true}
               >
                 <div className="space-y-4">
-                  {cartSummary.items.map((item, index) => (
+                  {cartSummary.items.map((item: any, index: any) => (
                     <div
                       key={item.productId}
                       className={cn(
@@ -566,7 +566,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <div className="sticky top-4">
               <OrderSummaryCard
-                items={cartSummary.items.map(item => ({
+                items={cartSummary.items.map((item: any) => ({
                   name: item.productName,
                   quantity: item.quantity,
                   price: Number(item.price),

@@ -22,6 +22,7 @@ const OTP_EXPIRY_MINUTES = 5;
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 15;
 const MAX_EMAIL_RETRIES = 3;
+const EMAIL_RETRY_DELAY_MS = 1000;
 const RATE_LIMIT_REQUESTS = 3; // عدد الطلبات المسموحة
 const RATE_LIMIT_WINDOW_MINUTES = 15; // نافذة الوقت
 
@@ -149,7 +150,7 @@ export async function createPasswordResetRequest(
     .set({ isUsed: true })
     .where(
       and(
-        eq(passwordResets.userId, foundUser.id),
+        eq((passwordResets as any).userId, foundUser.id),
         eq(passwordResets.isUsed, false)
       )
     );
@@ -216,8 +217,8 @@ export async function verifyPasswordResetOTP(
       and(
         eq(passwordResets.email, email.toLowerCase().trim()),
         eq(passwordResets.isUsed, false),
-        eq(passwordResets.isLocked, false),
-        gt(passwordResets.expiresAt, new Date())
+        eq((passwordResets as any).isLocked, false),
+        gt((passwordResets as any).expiresAt, new Date())
       )
     )
     .orderBy(desc(passwordResets.createdAt))
@@ -488,7 +489,7 @@ export async function sendPasswordResetEmail(
         content: emailContent
       });
       
-      if (sent) {
+      if (Boolean(sent)) {
         console.log(`[Email] Password reset email sent to ${email} (attempt ${attempt})`);
         return {
           success: true,
@@ -498,3 +499,18 @@ export async function sendPasswordResetEmail(
       }
       
       throw new Error('فشل إرسال الإشعار');
+    } catch (error: any) {
+      lastError = error instanceof Error ? error : new Error(String(error?.message ?? error));
+      console.error(`[Email] Failed to send password reset email to ${email} (attempt ${attempt}/${maxRetries})`, lastError);
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, EMAIL_RETRY_DELAY_MS));
+      }
+    }
+  }
+
+  return {
+    success: false,
+    message: lastError?.message || 'فشل إرسال رمز التحقق، يرجى المحاولة لاحقاً',
+    retries: maxRetries,
+  };
+}

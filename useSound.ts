@@ -16,7 +16,7 @@ import {
   updateSettings,
   registerUserInteraction,
   type SoundType,
-} from '../lib/soundSystem';
+} from '@/lib/soundSystem';
 
 /**
  * Hook رئيسي لنظام الأصوات
