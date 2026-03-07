@@ -236,6 +236,21 @@ export default function LoginPage() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
+      try {
+        localStorage.setItem(
+          'manus-runtime-user-info',
+          JSON.stringify({
+            id: data.userId,
+            email: data.email,
+            name: data.name,
+            role: data.role,
+            profileImage: (data as any).profileImage ?? null,
+            isVerified: (data as any).isVerified ?? true,
+          })
+        );
+      } catch {
+        // ignore
+      }
       utils.auth.me.invalidate().catch(() => {});
       const role = data.role;
       if (role === "admin" || role === "sub_admin") {

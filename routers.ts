@@ -452,6 +452,7 @@ const authRouter = router({
         role: user.role,
         name: user.name,
         email: user.email,
+        profileImage: (user as any).profileImage ?? null,
         isVerified: user.isVerified,
         message: "تم تسجيل الدخول بنجاح",
       };
