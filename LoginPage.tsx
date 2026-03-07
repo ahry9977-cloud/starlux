@@ -176,8 +176,7 @@ const PasswordStrength = ({ password }: { password: string }) => {
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const { user, loading: authLoading } = useAuth();
-  
-  // Form state
+  const utils = trpc.useUtils();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -237,6 +236,7 @@ export default function LoginPage() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
+      utils.auth.me.invalidate().catch(() => {});
       const role = data.role;
       if (role === "admin" || role === "sub_admin") {
         setLocation("/admin-dashboard");
