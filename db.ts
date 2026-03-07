@@ -1,6 +1,8 @@
 import { Pool as PgPool } from "pg";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import fs from "node:fs";
+import path from "node:path";
 import { ENV } from "./env";
 import {
   cartItems,
@@ -25,6 +27,7 @@ import {
 let _pgPool: PgPool | null = null;
 let _db: ReturnType<typeof drizzlePg> | null = null;
 let _sqlite: any | null = null;
+let _pgSchemaEnsured = false;
 
 export async function getDb() {
   if (_db) return _db as any;
@@ -49,6 +52,7 @@ export async function getDb() {
   try {
     _pgPool = new PgPool({ connectionString: ENV.databaseUrl });
     await _pgPool.query("SELECT 1");
+    await ensurePostgresSchema(_pgPool);
     _db = drizzlePg(_pgPool);
     return _db as any;
   } catch (err) {
@@ -58,6 +62,36 @@ export async function getDb() {
     }
     throw err;
   }
+}
+
+async function ensurePostgresSchema(pg: PgPool) {
+  if (_pgSchemaEnsured) return;
+
+  const isProduction = process.env.NODE_ENV === "production";
+  // Avoid unexpected schema mutations outside production unless explicitly allowed.
+  const allowInit = isProduction || process.env.AUTO_INIT_DB === "1";
+  if (!allowInit) return;
+
+  const res = await pg.query(`SELECT to_regclass('public.users') AS users_table`);
+  const exists = Boolean(res.rows?.[0]?.users_table);
+  if (exists) {
+    _pgSchemaEnsured = true;
+    return;
+  }
+
+  const initPath = path.join(process.cwd(), "docker", "postgres", "init.sql");
+  let ddl = "";
+  try {
+    ddl = await fs.promises.readFile(initPath, "utf8");
+  } catch (e) {
+    throw new Error(
+      `Postgres schema is missing (table users not found) and init.sql could not be read at ${initPath}. ` +
+        `Set up the database schema before running the server.`
+    );
+  }
+
+  await pg.query(ddl);
+  _pgSchemaEnsured = true;
 }
 
 async function createSqliteDb() {
