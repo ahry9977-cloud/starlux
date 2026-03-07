@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import compression from "compression";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,8 +91,31 @@ app.use(
     credentials: true,
   })
 );
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(compression());
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use("/api", apiLimiter);
+app.use("/api/trpc/auth.", authLimiter);
+app.use("/api/rest/auth", authLimiter);
 
 function isSocialBot(userAgentRaw: unknown): boolean {
   const ua = String(userAgentRaw ?? "").toLowerCase();
