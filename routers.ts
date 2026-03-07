@@ -1741,7 +1741,9 @@ const cartRouter = router({
 
         // إنشاء الطلب
         const { orders, orderItems } = await import('./drizzle/schema');
-        const [orderResult] = await db.insert(orders).values({
+        const orderInserted = await db
+          .insert(orders)
+          .values({
           buyerId: ctx.user!.id,
           storeId,
           totalAmount: orderTotal.toString(),
@@ -1751,9 +1753,13 @@ const cartRouter = router({
           paymentStatus: 'pending',
           shippingAddress: JSON.stringify(input.shippingAddress),
           notes: input.notes,
-        });
+          } as any)
+          .returning({ id: orders.id });
 
-        const orderId = orderResult.insertId;
+        const orderId = Number((orderInserted as any)?.[0]?.id ?? 0);
+        if (!orderId) {
+          throw new Error("فشل إنشاء الطلب");
+        }
         orderIds.push(orderId);
 
         // إضافة عناصر الطلب
@@ -1774,11 +1780,12 @@ const cartRouter = router({
 
         // تحويل صافي البائع مباشرة وبشكل ذري لمنع التداخل تحت الضغط العالي
         await db.execute(sql`
-          INSERT INTO sellerWallet (sellerId, balance, currency, updatedAt)
+          INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
           VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
-          ON DUPLICATE KEY UPDATE
-            balance = balance + VALUES(balance),
-            updatedAt = NOW()
+          ON CONFLICT (sellerid)
+          DO UPDATE SET
+            balance = sellerwallet.balance + EXCLUDED.balance,
+            updatedat = NOW()
         `);
 
         await createTransaction({

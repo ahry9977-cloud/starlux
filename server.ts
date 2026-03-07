@@ -589,18 +589,25 @@ app.post("/api/rest/cart/checkout", async (req, res) => {
       const orderCommission = Math.round(orderTotal * PLATFORM_COMMISSION_RATE * 100) / 100;
       const sellerAmount = orderTotal - orderCommission;
 
-      const [orderResult] = await db.insert(orders).values({
-        buyerId: userId,
-        storeId,
-        totalAmount: orderTotal,
-        commission: orderCommission,
-        sellerAmount,
-        paymentMethod,
-        paymentStatus: "pending",
-        shippingAddress: JSON.stringify(shippingAddress),
-        notes: notes ? String(notes) : null,
-      } as any);
-      const orderId = Number((orderResult as any).insertId ?? (orderResult as any));
+      const orderInserted = await db
+        .insert(orders)
+        .values({
+          buyerId: userId,
+          storeId,
+          totalAmount: orderTotal,
+          commission: orderCommission,
+          sellerAmount,
+          paymentMethod,
+          paymentStatus: "pending",
+          shippingAddress: JSON.stringify(shippingAddress),
+          notes: notes ? String(notes) : null,
+        } as any)
+        .returning({ id: orders.id });
+
+      const orderId = Number((orderInserted as any)?.[0]?.id ?? 0);
+      if (!orderId) {
+        return res.status(500).json({ ok: false, message: "Failed to create order" });
+      }
       orderIds.push(orderId);
 
       for (const item of items) {
@@ -617,11 +624,12 @@ app.post("/api/rest/cart/checkout", async (req, res) => {
       const sellerId = Number((storeData as any)?.sellerId ?? 1);
 
       await db.execute(sql`
-        INSERT INTO sellerWallet (sellerId, balance, currency, updatedAt)
+        INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
         VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
-        ON DUPLICATE KEY UPDATE
-          balance = balance + VALUES(balance),
-          updatedAt = NOW()
+        ON CONFLICT (sellerid)
+        DO UPDATE SET
+          balance = sellerwallet.balance + EXCLUDED.balance,
+          updatedat = NOW()
       `);
 
       await createTransaction({

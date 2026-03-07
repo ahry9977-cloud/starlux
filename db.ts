@@ -222,22 +222,22 @@ export async function createUser(_data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const inserted = await db.insert(users).values(payload).returning({ id: users.id });
-  const insertId = (inserted as any)?.[0]?.id;
-  return Number(insertId ?? 0) as any;
+  const id = (inserted as any)?.[0]?.id;
+  return Number(id ?? 0) as any;
 }
 
 export async function createChatConversation(_userId?: number | null) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(chatConversations).values({
-    userId: _userId != null ? Number(_userId) : null,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(chatConversations)
+    .values({
+      userId: _userId != null ? Number(_userId) : null,
+    } as any)
+    .returning({ id: chatConversations.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function appendChatMessage(_conversationId: number, _role: "system" | "user" | "assistant", _content: string) {
@@ -431,7 +431,9 @@ export async function createCategory(_data: any) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(categories).values({
+  const inserted = await db
+    .insert(categories)
+    .values({
     nameAr: _data.nameAr,
     nameEn: _data.nameEn,
     icon: _data.icon ?? null,
@@ -439,12 +441,10 @@ export async function createCategory(_data: any) {
     parentId: _data.parentId ?? null,
     isFeatured: Boolean(_data.isFeatured ?? false),
     isActive: Boolean(_data.isActive ?? true),
-  });
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+    } as any)
+    .returning({ id: categories.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function updateCategory(_id: number, _data: any) {
@@ -550,17 +550,17 @@ export async function trackShare(_data: { productId?: number; storeId?: number; 
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(shares).values({
-    productId: _data.productId != null ? Number(_data.productId) : null,
-    storeId: _data.storeId != null ? Number(_data.storeId) : null,
-    userId: _data.userId != null ? Number(_data.userId) : null,
-    platform: _data.platform,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(shares)
+    .values({
+      productId: _data.productId != null ? Number(_data.productId) : null,
+      storeId: _data.storeId != null ? Number(_data.storeId) : null,
+      userId: _data.userId != null ? Number(_data.userId) : null,
+      platform: _data.platform,
+    } as any)
+    .returning({ id: shares.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function createDirectBuyOrder(_data: {
@@ -586,20 +586,24 @@ export async function createDirectBuyOrder(_data: {
   const [storeData] = (await db.select().from(stores).where(eq(stores.id, storeId)).limit(1)) as any[];
   const sellerId = Number(storeData?.sellerId ?? 0);
 
-  const [orderResult] = await db.insert(orders).values({
-    buyerId: Number(_data.buyerId),
-    storeId,
-    status: "pending",
-    totalAmount: total,
-    commission,
-    sellerAmount,
-    paymentMethod: String(_data.paymentMethod ?? "visa"),
-    paymentStatus: "pending",
-    shippingAddress: _data.shippingAddress ? JSON.stringify(_data.shippingAddress) : null,
-    notes: null,
-  } as any);
+  const orderInserted = await db
+    .insert(orders)
+    .values({
+      buyerId: Number(_data.buyerId),
+      storeId,
+      status: "pending",
+      totalAmount: total,
+      commission,
+      sellerAmount,
+      paymentMethod: String(_data.paymentMethod ?? "visa"),
+      paymentStatus: "pending",
+      shippingAddress: _data.shippingAddress ? JSON.stringify(_data.shippingAddress) : null,
+      notes: null,
+    } as any)
+    .returning({ id: orders.id });
 
-  const orderId = Number((orderResult as any)?.insertId ?? 0);
+  const orderId = Number((orderInserted as any)?.[0]?.id ?? 0);
+  if (!orderId) throw new Error("Failed to create order");
 
   await db.insert(orderItems).values({
     orderId,
@@ -610,11 +614,12 @@ export async function createDirectBuyOrder(_data: {
   } as any);
 
   await db.execute(sql`
-    INSERT INTO sellerWallet (sellerId, balance, currency, updatedAt)
+    INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
     VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
-    ON DUPLICATE KEY UPDATE
-      balance = balance + VALUES(balance),
-      updatedAt = NOW()
+    ON CONFLICT (sellerid)
+    DO UPDATE SET
+      balance = sellerwallet.balance + EXCLUDED.balance,
+      updatedat = NOW()
   `);
 
   await createTransaction({
@@ -640,13 +645,13 @@ export async function getTrendingProducts(_limit = 12) {
     LEFT JOIN (
       SELECT product_id AS productId, COUNT(*) AS viewCount
       FROM product_views
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      WHERE created_at >= (NOW() - INTERVAL '7 days')
       GROUP BY product_id
     ) v ON v.productId = p.id
     LEFT JOIN (
-      SELECT oi.productId AS productId, COUNT(*) AS purchaseCount
-      FROM orderItems oi
-      GROUP BY oi.productId
+      SELECT oi.productid AS productId, COUNT(*) AS purchaseCount
+      FROM orderitems oi
+      GROUP BY oi.productid
     ) o ON o.productId = p.id
     WHERE p.isActive = TRUE
     ORDER BY (COALESCE(o.purchaseCount,0) * 3 + COALESCE(v.viewCount,0)) DESC, p.id DESC
@@ -723,8 +728,8 @@ export async function createProduct(_data: any) {
     video: _data.video ?? null,
     isActive: _data.isActive ?? true,
   }).returning({ id: products.id });
-  const insertId = (inserted as any)?.[0]?.id;
-  return Number(insertId ?? 0) as any;
+  const id = (inserted as any)?.[0]?.id;
+  return Number(id ?? 0) as any;
 }
 
 export async function updateProduct(_id: number, _storeId: number, _data: any) {
@@ -903,9 +908,12 @@ export async function addToCart(_userId: number, _productId: number, _quantity: 
   if (!db) throw new Error("Database not available");
   const qty = Math.max(1, Number(_quantity ?? 1));
   await db.execute(sql`
-    INSERT INTO cartItems (userId, productId, quantity, createdAt, updatedAt)
+    INSERT INTO cartitems (userid, productid, quantity, createdat, updatedat)
     VALUES (${_userId}, ${_productId}, ${qty}, NOW(), NOW())
-    ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity), updatedAt = NOW()
+    ON CONFLICT (userid, productid)
+    DO UPDATE SET
+      quantity = cartitems.quantity + EXCLUDED.quantity,
+      updatedat = NOW()
   `);
   const rows = (await db
     .select({ id: cartItems.id })
@@ -941,19 +949,19 @@ export async function createStore(_data: any) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(stores).values({
-    sellerId: _data.sellerId,
-    name: _data.name,
-    description: _data.description ?? null,
-    category: _data.category,
-    isVerified: Boolean(_data.isVerified ?? false),
-    isActive: Boolean(_data.isActive ?? true),
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(stores)
+    .values({
+      sellerId: _data.sellerId,
+      name: _data.name,
+      description: _data.description ?? null,
+      category: _data.category,
+      isVerified: Boolean(_data.isVerified ?? false),
+      isActive: Boolean(_data.isActive ?? true),
+    } as any)
+    .returning({ id: stores.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function updateStore(_storeId: number, _data: any) {
@@ -996,17 +1004,17 @@ export async function addSellerPaymentMethod(_storeId: number, _methodType: stri
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(sellerPaymentMethods).values({
-    storeId: _storeId,
-    methodType: _methodType,
-    accountDetails: _accountDetails,
-    isActive: true,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(sellerPaymentMethods)
+    .values({
+      storeId: _storeId,
+      methodType: _methodType,
+      accountDetails: _accountDetails,
+      isActive: true,
+    } as any)
+    .returning({ id: sellerPaymentMethods.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function removeSellerPaymentMethod(_storeId: number, _methodId: number) {
@@ -1025,21 +1033,21 @@ export async function createTransaction(_data: any) {
   if (!db) throw new Error("Database not available");
   const orderRow = (await db.select().from(orders).where(eq(orders.id, _data.orderId)).limit(1)) as any[];
   const storeId = orderRow?.[0]?.storeId;
-  const result = await db.insert(payments).values({
-    orderId: _data.orderId,
-    buyerId: _data.buyerId,
-    sellerId: _data.sellerId ?? null,
-    storeId: Number(storeId ?? 0),
-    method: _data.paymentMethod,
-    amount: Number(_data.amount ?? 0),
-    status: "pending",
-    providerRef: null,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(payments)
+    .values({
+      orderId: _data.orderId,
+      buyerId: _data.buyerId,
+      sellerId: _data.sellerId ?? null,
+      storeId: Number(storeId ?? 0),
+      method: _data.paymentMethod,
+      amount: Number(_data.amount ?? 0),
+      status: "pending",
+      providerRef: null,
+    } as any)
+    .returning({ id: payments.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function addRating(_data: any) {
@@ -1072,21 +1080,31 @@ export async function createAuditLog(_data: any) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(roleAuditLogs).values({
-    action: String(_data.action ?? ""),
-    entityType: String(_data.entityType ?? ""),
-    entityId: _data.entityId ?? null,
-    oldData: _data.oldValue != null ? JSON.stringify(_data.oldValue) : (_data.oldData != null ? JSON.stringify(_data.oldData) : null),
-    newData: _data.newValue != null ? JSON.stringify(_data.newValue) : (_data.newData != null ? JSON.stringify(_data.newData) : null),
-    changedBy: _data.userId ?? _data.changedBy ?? null,
-    ipAddress: _data.ipAddress ?? null,
-    userAgent: _data.userAgent ?? null,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(roleAuditLogs)
+    .values({
+      action: String(_data.action ?? ""),
+      entityType: String(_data.entityType ?? ""),
+      entityId: _data.entityId ?? null,
+      oldData:
+        _data.oldValue != null
+          ? JSON.stringify(_data.oldValue)
+          : _data.oldData != null
+            ? JSON.stringify(_data.oldData)
+            : null,
+      newData:
+        _data.newValue != null
+          ? JSON.stringify(_data.newValue)
+          : _data.newData != null
+            ? JSON.stringify(_data.newData)
+            : null,
+      changedBy: _data.userId ?? _data.changedBy ?? null,
+      ipAddress: _data.ipAddress ?? null,
+      userAgent: _data.userAgent ?? null,
+    } as any)
+    .returning({ id: roleAuditLogs.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function searchProducts(_opts: any) {
@@ -1120,17 +1138,17 @@ export async function createRating(_data: any) {
   if (_sqlite) return 0 as any;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(productReviews).values({
-    productId: Number(_data.entityId),
-    userId: Number(_data.userId),
-    rating: Number(_data.rating),
-    reviewText: null,
-  } as any);
-  let insertId: any = (result as any)?.insertId;
-  if (insertId == null && Array.isArray(result)) {
-    insertId = (result as any)?.[0]?.insertId ?? (result as any)?.[0];
-  }
-  return Number(insertId ?? 0) as any;
+  const inserted = await db
+    .insert(productReviews)
+    .values({
+      productId: Number(_data.entityId),
+      userId: Number(_data.userId),
+      rating: Number(_data.rating),
+      reviewText: null,
+    } as any)
+    .returning({ id: productReviews.id });
+  const id = Number((inserted as any)?.[0]?.id ?? 0);
+  return id as any;
 }
 
 export async function updateRating(_id: number, _data: any) {
