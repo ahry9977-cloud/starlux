@@ -25,6 +25,46 @@ import {
 
 const app = express();
 
+async function bootstrapAdminFromEnv() {
+  const emailRaw = process.env.ADMIN_EMAIL ?? "";
+  const passwordRaw = process.env.ADMIN_PASSWORD ?? "";
+  const shouldRun = emailRaw.trim().length > 0 && passwordRaw.trim().length > 0;
+  if (!shouldRun) return;
+
+  const email = emailRaw.toLowerCase().trim();
+  const password = String(passwordRaw);
+
+  await getDb();
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const existing = await getUserByEmail(email);
+
+  if (!existing) {
+    const userId = await createUser({
+      email,
+      passwordHash,
+      name: "Admin",
+      role: "admin",
+      isVerified: true,
+      isBlocked: false,
+      failedLoginAttempts: 0,
+      lastSignedIn: null,
+    });
+    console.log("[bootstrap-admin] created admin user", { email, userId });
+    return;
+  }
+
+  await updateUser(existing.id, {
+    passwordHash,
+    role: "admin",
+    isVerified: true,
+    isBlocked: false,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+  });
+  console.log("[bootstrap-admin] updated admin user", { email, userId: existing.id });
+}
+
 if (process.env.NODE_ENV === "production") {
   // Required when running behind reverse proxies (Railway/Render/Nginx)
   // so req.protocol and x-forwarded-proto are handled correctly.
@@ -841,6 +881,10 @@ app.use(
     createContext,
   })
 );
+
+bootstrapAdminFromEnv().catch((err) => {
+  console.error("[bootstrap-admin] failed", err);
+});
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => {
