@@ -190,7 +190,7 @@ export const notificationSettings = pgTable("notificationsettings", {
   emailCommunication: boolean("emailcommunication").notNull().default(true),
   inAppEnabled: boolean("inappenabled").notNull().default(true),
   inAppSound: boolean("inappsound").notNull().default(true),
-  pushEnabled: boolean("pushenabled").notNull().default(false),
+  pushEnabled: boolean("pushenabled").notNull().default(true),
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
@@ -268,6 +268,21 @@ export const sessions = pgTable("sessions", {
   expiresAt: timestamp("expiresat", { withTimezone: true }),
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
+
+export const userDeviceTokens = pgTable(
+  "userdevicetokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("userid").notNull(),
+    token: text("token").notNull(),
+    platform: varchar("platform", { length: 20 }),
+    createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updatedat", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    userTokenUnique: uniqueIndex("userDeviceTokens_user_token_unique").on(t.userId, t.token),
+  })
+);
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
