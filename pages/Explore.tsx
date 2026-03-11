@@ -42,17 +42,24 @@ export default function Explore(): React.JSX.Element {
 
   const { data, isLoading } = trpc.products.getAll.useQuery({ limit: 60, offset: 0 });
 
+  const dbSearchEnabled = searchQuery.trim().length > 0;
+  const { data: dbSearchData, isLoading: dbSearchLoading } = trpc.products.search.useQuery(
+    { query: searchQuery.trim(), limit: 60, offset: 0 },
+    { enabled: dbSearchEnabled }
+  );
+
   const products = useMemo(() => {
     if (aiResults) return aiResults;
+
+    const q = searchQuery.trim();
+    if (q) {
+      const fromDb = (dbSearchData as any)?.products ?? [];
+      return Array.isArray(fromDb) ? fromDb : [];
+    }
+
     const list = (data as any)?.products ?? [];
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((p: any) => {
-      const title = String(p?.title ?? "").toLowerCase();
-      const desc = String(p?.description ?? "").toLowerCase();
-      return title.includes(q) || desc.includes(q);
-    });
-  }, [aiResults, data, searchQuery]);
+    return Array.isArray(list) ? list : [];
+  }, [aiResults, data, dbSearchData, searchQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +219,7 @@ export default function Explore(): React.JSX.Element {
           </div>
         )}
 
-        {isLoading || aiLoading ? (
+        {isLoading || aiLoading || dbSearchLoading ? (
           <div className="py-12 text-center text-muted-foreground">{language === "ar-IQ" ? "جاري التحميل..." : "Loading..."}</div>
         ) : (
           <>

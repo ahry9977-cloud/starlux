@@ -1,6 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,7 +16,7 @@ import {
   ShoppingCart, Store, Users, Zap, Globe, Lock, Search, 
   Smartphone, Shirt, Home as HomeIcon, Heart, Trophy,
   MessageCircle, Send, Phone, Mail, ChevronDown, ChevronRight,
-  Instagram, ExternalLink, Moon, Sun
+  Instagram, ExternalLink, Moon, Sun, Menu
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -150,46 +157,105 @@ export default function Home() {
               </div>
             </form>
 
-            <div className="flex items-center !gap-8">
+            <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
               <LanguageSwitcher />
-              {switchable && toggleTheme && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleTheme}
-                  className="gap-2 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background hover:border-border"
-                  title={theme === "dark" ? "Light mode" : "Dark mode"}
-                >
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </Button>
-              )}
-              {isAuthenticated ? (
-                <>
-                  <span className="text-sm text-muted-foreground hidden md:block">{user?.name || user?.email}</span>
-                  {/* زر لوحة التحكم - يظهر فقط للأدمن */}
-                  {(user?.role === 'admin' || user?.role === 'sub_admin') && (
-                    <Button className="bg-red-600 hover:bg-red-700 text-white font-bold" size="sm" onClick={() => navigate('/admin-dashboard')}>
-                      لوحة التحكم
+
+              <div className="hidden md:flex items-center gap-3">
+                {switchable && toggleTheme && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleTheme}
+                    className="gap-2 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background hover:border-border"
+                    title={theme === "dark" ? "Light mode" : "Dark mode"}
+                  >
+                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </Button>
+                )}
+                {isAuthenticated ? (
+                  <>
+                    <span className="text-sm text-muted-foreground hidden md:block">{user?.name || user?.email}</span>
+                    {/* زر لوحة التحكم - يظهر فقط للأدمن */}
+                    {(user?.role === 'admin' || user?.role === 'sub_admin') && (
+                      <Button className="bg-red-600 hover:bg-red-700 text-white font-bold" size="sm" onClick={() => navigate('/admin-dashboard')}>
+                        لوحة التحكم
+                      </Button>
+                    )}
+                    {/* زر لوحة البائع */}
+                    {user?.role === 'seller' && (
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold" size="sm" onClick={() => navigate('/seller-dashboard')}>
+                        لوحة البائع
+                      </Button>
+                    )}
+                    {/* زر حسابي للمستخدمين العاديين */}
+                    {user?.role === 'user' && (
+                      <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
+                        {language === 'ar-IQ' ? 'حسابي' : 'My Account'}
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <Button size="sm" onClick={() => navigate("/auth")}>
+                    {t('nav.signIn')}
+                  </Button>
+                )}
+              </div>
+
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9">
+                      <Menu className="h-5 w-5" />
                     </Button>
-                  )}
-                  {/* زر لوحة البائع */}
-                  {user?.role === 'seller' && (
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold" size="sm" onClick={() => navigate('/seller-dashboard')}>
-                      لوحة البائع
-                    </Button>
-                  )}
-                  {/* زر حسابي للمستخدمين العاديين */}
-                  {user?.role === 'user' && (
-                    <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-                      {language === 'ar-IQ' ? 'حسابي' : 'My Account'}
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <Button size="sm" onClick={() => navigate("/auth")}>
-                  {t('nav.signIn')}
-                </Button>
-              )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate("/")}
+                      className="justify-start">
+                      {language === "ar-IQ" ? "الرئيسية" : "Home"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/explore")}
+                      className="justify-start">
+                      {language === "ar-IQ" ? "استكشف المنتجات" : "Explore Products"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+
+                    {switchable && toggleTheme && (
+                      <DropdownMenuItem
+                        onClick={toggleTheme}
+                        className="justify-start"
+                      >
+                        {theme === "dark"
+                          ? language === "ar-IQ" ? "الوضع الفاتح" : "Light mode"
+                          : language === "ar-IQ" ? "الوضع الداكن" : "Dark mode"}
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuSeparator />
+
+                    {!isAuthenticated ? (
+                      <DropdownMenuItem onClick={() => navigate("/auth")} className="justify-start">
+                        {language === "ar-IQ" ? "تسجيل الدخول" : "Sign In"}
+                      </DropdownMenuItem>
+                    ) : (
+                      <>
+                        {(user?.role === 'admin' || user?.role === 'sub_admin') && (
+                          <DropdownMenuItem onClick={() => navigate('/admin-dashboard')} className="justify-start">
+                            {language === "ar-IQ" ? "لوحة التحكم" : "Admin Dashboard"}
+                          </DropdownMenuItem>
+                        )}
+                        {user?.role === 'seller' && (
+                          <DropdownMenuItem onClick={() => navigate('/seller-dashboard')} className="justify-start">
+                            {language === "ar-IQ" ? "لوحة البائع" : "Seller Dashboard"}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => navigate('/dashboard')} className="justify-start">
+                          {language === 'ar-IQ' ? 'حسابي' : 'My Account'}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </nav>
