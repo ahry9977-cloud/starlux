@@ -4,9 +4,10 @@
  */
 
 import { getDb } from "./db";
-import { notifications, notificationSettings, notificationLogs, supportedCurrencies, currencyConversions } from "./drizzle/schema";
+import { notifications, notificationSettings, notificationLogs, supportedCurrencies, currencyConversions, userDeviceTokens } from "./drizzle/schema";
 import { eq, and, desc, sql, inArray, lt, isNull, or } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
+import { sendPushToTokens } from "./pushNotifications";
 
 // ============= أنواع الإشعارات =============
 export type NotificationCategory = 
@@ -340,6 +341,34 @@ export async function createAdvancedNotification(
     .returning({ id: (notifications as any).id });
 
   const notificationId = Number((inserted as any)?.[0]?.id ?? 0) || undefined;
+
+  // إرسال Push notification إذا مفعل
+  try {
+    const settings = await getNotificationSettings(userId);
+    if (settings?.pushEnabled && notificationId) {
+      const tokenRows = await db
+        .select({ token: (userDeviceTokens as any).token })
+        .from(userDeviceTokens as any)
+        .where(eq((userDeviceTokens as any).userId, userId));
+      const tokens = (tokenRows as any[]).map((r) => String(r?.token ?? "")).filter(Boolean);
+
+      if (tokens.length > 0) {
+        const actionUrl = options.actionUrl ? String(options.actionUrl) : "";
+        await sendPushToTokens({
+          tokens,
+          title: template.title,
+          body: message,
+          data: {
+            notificationId: String(notificationId),
+            type: String(type),
+            actionUrl,
+          },
+        });
+      }
+    }
+  } catch (e) {
+    console.error("[push] failed to send push", e);
+  }
 
   // إرسال بريد إلكتروني إذا مطلوب
   if (options.sendEmail && notificationId) {

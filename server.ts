@@ -18,6 +18,7 @@ import {
   refreshAccessToken,
   verifyAccessToken,
 } from "./auth-advanced";
+import { userDeviceTokens } from "./drizzle/schema";
 import {
   createUser,
   getUserByEmail,
@@ -918,6 +919,60 @@ app.get("/api/rest/auth/me", async (req, res) => {
     return res.json({ ok: true, user });
   } catch (err: any) {
     return res.status(401).json({ ok: false, message: err?.message ?? "Unauthorized" });
+  }
+});
+
+app.post("/api/rest/push/register-token", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+
+    const fcmToken = String(req.body?.token ?? "").trim();
+    const platform = req.body?.platform != null ? String(req.body.platform).trim() : null;
+    if (!fcmToken) return res.status(400).json({ ok: false, message: "Missing token" });
+
+    const db = await getDb();
+    if (!db) return res.status(503).json({ ok: false, message: "Database not available" });
+
+    await db
+      .insert(userDeviceTokens as any)
+      .values({ userId, token: fcmToken, platform } as any)
+      .onConflictDoNothing();
+
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[push] register-token failed", err);
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
+
+app.post("/api/rest/push/unregister-token", async (req, res) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ ok: false, message: "Missing bearer token" });
+
+    const payload = await verifyAccessToken(token);
+    const userId = Number((payload as any).userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
+
+    const fcmToken = String(req.body?.token ?? "").trim();
+    if (!fcmToken) return res.status(400).json({ ok: false, message: "Missing token" });
+
+    const db = await getDb();
+    if (!db) return res.status(503).json({ ok: false, message: "Database not available" });
+
+    await db
+      .delete(userDeviceTokens as any)
+      .where(and(eq((userDeviceTokens as any).userId, userId), eq((userDeviceTokens as any).token, fcmToken)));
+
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[push] unregister-token failed", err);
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
   }
 });
 

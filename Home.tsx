@@ -283,6 +283,31 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="container mx-auto px-4 !py-10 md:!py-14">
+          <Card className="border-border/50 bg-card/60">
+            <CardHeader>
+              <CardTitle className="text-xl md:text-2xl">
+                {language === "ar-IQ" ? "حمّل تطبيق STAR LUX" : "Download STAR LUX App"}
+              </CardTitle>
+              <CardDescription>
+                {language === "ar-IQ"
+                  ? "التطبيق قريباً على Google Play و App Store"
+                  : "Coming soon on Google Play and the App Store"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" disabled>
+                  {language === "ar-IQ" ? "Android (قريباً)" : "Android (Soon)"}
+                </Button>
+                <Button variant="outline" disabled>
+                  {language === "ar-IQ" ? "iPhone (قريباً)" : "iPhone (Soon)"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Latest Products */}
         <section className="container mx-auto px-4 !py-24 md:!py-28 lg:!py-32">
           <div className="flex items-center justify-between mb-8">
