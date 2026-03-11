@@ -8,20 +8,6 @@
    CSS CUSTOM PROPERTIES (Design Tokens)
    ============================================ */
 :root {
-  /* Spacing Scale (8px base) */
-  --space-1: 0.25rem;   /* 4px */
-  --space-2: 0.5rem;    /* 8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.5rem;    /* 24px */
-  --space-6: 2rem;      /* 32px */
-  --space-7: 2.5rem;    /* 40px */
-  --space-8: 3rem;      /* 48px */
-  --space-9: 4rem;      /* 64px */
-  --space-10: 5rem;     /* 80px */
-  --space-11: 6rem;     /* 96px */
-  --space-12: 8rem;     /* 128px */
-
   /* Container Widths */
   --container-xs: 20rem;    /* 320px */
   --container-sm: 24rem;    /* 384px */

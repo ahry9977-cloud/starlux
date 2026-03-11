@@ -392,10 +392,11 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-4 z-50 group",
+          "fixed z-50 group",
           isArabic ? "left-4" : "right-4",
           isOpen && "hidden"
         )}
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
         aria-label="Open chat"
       >
         {/* الحلقة الخارجية المتوهجة */}
@@ -405,7 +406,7 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
         <div className="absolute inset-1 rounded-full bg-gradient-to-br from-accent to-secondary opacity-40 animate-spin-slow" style={{ animationDuration: '8s' }} />
         
         {/* الزر الرئيسي */}
-        <div className="relative w-12 h-12 rounded-full bg-card border border-border flex items-center justify-center shadow-2xl shadow-primary/20 group-hover:shadow-primary/35 group-hover:scale-105 transition-all duration-300">
+        <div className="relative w-14 h-14 rounded-full bg-card border border-border flex items-center justify-center shadow-2xl shadow-primary/20 group-hover:shadow-primary/35 group-hover:scale-[1.03] transition-all duration-300">
           {/* الأيقونة المتحركة */}
           <div className="relative">
             {/* نجمة خلفية */}
@@ -435,12 +436,13 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
           <div className="absolute inset-0 bg-black/20" />
           <Card
             className={cn(
-              "fixed bottom-4 z-50 shadow-2xl overflow-hidden",
+              "fixed z-50 shadow-2xl overflow-hidden",
               "bg-card/95 backdrop-blur-xl border border-border",
               "transition-all duration-300",
               isMinimized ? "w-72 h-14" : "w-[340px] h-[480px]",
               isArabic ? "left-4" : "right-4"
             )}
+            style={{ bottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* تأثير الحدود المتوهجة */}

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/spacing-system.css";
+@import "./design-system.css";
 
 /* الخطوط يتم تحميلها من index.html لتحسين الأداء */
 

@@ -79,6 +79,39 @@ export default function Home() {
   const buyNowMutation = trpc.cart.buyNow.useMutation();
   const shareMutation = trpc.sharing.track.useMutation();
 
+  const normalizeProduct = (p: any) => {
+    if (!p) return p;
+    if (typeof p?.images === "string") {
+      try {
+        return { ...p, images: JSON.parse(p.images) };
+      } catch {
+        return { ...p, images: [] };
+      }
+    }
+    return p;
+  };
+
+  const buyNow = async (product: any) => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+    const res = await buyNowMutation.mutateAsync({
+      productId: Number(product?.id),
+      quantity: 1,
+      paymentMethod: "visa",
+    });
+    if ((res as any)?.orderId) {
+      navigate(`/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`);
+    }
+  };
+
+  const share = async (product: any) => {
+    const url = `${window.location.origin}/product/${product?.id}`;
+    await navigator.clipboard.writeText(url);
+    await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product?.id) });
+  };
+
   const orderedCategories = useMemo(() => {
     const list = (categoriesData ?? []) as any[];
     const nameKey = language === "ar-IQ" ? "nameAr" : "nameEn";
@@ -98,17 +131,27 @@ export default function Home() {
   }, [categoriesData, language]);
 
   const homeProducts = useMemo(() => {
-    return (((latestProducts as any)?.products ?? []) as any[]).map((p) => {
-      if (typeof p?.images === "string") {
-        try {
-          return { ...p, images: JSON.parse(p.images) };
-        } catch {
-          return { ...p, images: [] };
-        }
-      }
-      return p;
-    });
+    return (((latestProducts as any)?.products ?? []) as any[]).map(normalizeProduct);
   }, [latestProducts]);
+
+  const recommendedProducts = useMemo(() => {
+    return ((((recommendedQuery.data as any)?.products ?? []) as any[]) as any[]).map(normalizeProduct);
+  }, [recommendedQuery.data]);
+
+  const trendingProducts = useMemo(() => {
+    return ((((trendingData as any)?.products ?? []) as any[]) as any[]).map(normalizeProduct);
+  }, [trendingData]);
+
+  const topSharedProducts = useMemo(() => {
+    const items = (((topSharedQuery.data as any)?.items ?? []) as any[]) as any[];
+    return items
+      .map((item: any) => {
+        const p = item?.product ?? null;
+        if (!p) return null;
+        return normalizeProduct(p);
+      })
+      .filter(Boolean);
+  }, [topSharedQuery.data]);
 
   // SEO Meta Tags
   const seoData = {
@@ -143,11 +186,11 @@ export default function Home() {
         <AppNavbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSubmitSearch={handleSearch} />
 
         {/* Hero Section */}
-        <section className="container mx-auto px-4 !py-20 md:!py-28 lg:!py-32">
+        <section className="container mx-auto px-4 section-lg">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                {t('home.globalMarketplace')} <span className="text-accent">for Everyone</span>
+                {t('home.globalMarketplace')} <span className="bg-gradient-to-r from-accent via-primary to-accent bg-clip-text text-transparent">for Everyone</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-8">
                 {t('home.buyAndSell')}
@@ -215,7 +258,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="container mx-auto px-4 !py-10 md:!py-14">
+        <section className="container mx-auto px-4 section-sm">
           <Card className="border-border/50 bg-card/60">
             <CardHeader>
               <CardTitle className="text-xl md:text-2xl">
@@ -241,7 +284,7 @@ export default function Home() {
         </section>
 
         {/* Latest Products */}
-        <section className="container mx-auto px-4 !py-24 md:!py-28 lg:!py-32">
+        <section className="container mx-auto px-4 section-lg">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">
               {language === "ar-IQ" ? "أحدث المنتجات" : "Latest Products"}
@@ -259,102 +302,62 @@ export default function Home() {
                   product={product}
                   language={language}
                   onOpen={() => navigate(`/product/${product.id}`)}
-                  onBuyNow={async () => {
-                    if (!isAuthenticated) {
-                      navigate("/auth");
-                      return;
-                    }
-                    const res = await buyNowMutation.mutateAsync({
-                      productId: Number(product.id),
-                      quantity: 1,
-                      paymentMethod: "visa",
-                    });
-                    if ((res as any)?.orderId) {
-                      navigate(
-                        `/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`
-                      );
-                    }
-                  }}
-                  onShare={async () => {
-                    const url = `${window.location.origin}/product/${product.id}`;
-                    await navigator.clipboard.writeText(url);
-                    await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product.id) });
-                  }}
+                  onBuyNow={() => buyNow(product)}
+                  onShare={() => share(product)}
                 />
               );
             })}
           </div>
 
-          {isAuthenticated && Array.isArray((recommendedQuery.data as any)?.products) && (recommendedQuery.data as any).products.length > 0 && (
+          {isAuthenticated && recommendedProducts.length > 0 && (
             <div className="mt-14">
               <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "مقترح لك" : "Recommended for you"}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(((recommendedQuery.data as any)?.products ?? []) as any[]).slice(0, 8).map((product: any) => (
-                  <Card
+                {recommendedProducts.slice(0, 8).map((product: any) => (
+                  <ProductCard
                     key={`rec-${product.id}`}
-                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
-                      <CardDescription className="text-sm line-clamp-1">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold">${Number(product.price ?? 0)}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    product={product}
+                    language={language}
+                    onOpen={() => navigate(`/product/${product.id}`)}
+                    onBuyNow={() => buyNow(product)}
+                    onShare={() => share(product)}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {Array.isArray((trendingData as any)?.products) && (trendingData as any).products.length > 0 && (
+          {trendingProducts.length > 0 && (
             <div className="mt-14">
               <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر رواجاً" : "Trending products"}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(((trendingData as any)?.products ?? []) as any[]).slice(0, 8).map((product: any) => (
-                  <Card
+                {trendingProducts.slice(0, 8).map((product: any) => (
+                  <ProductCard
                     key={`trend-${product.id}`}
-                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
-                      <CardDescription className="text-sm line-clamp-1">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold">${Number(product.price ?? 0)}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    product={product}
+                    language={language}
+                    onOpen={() => navigate(`/product/${product.id}`)}
+                    onBuyNow={() => buyNow(product)}
+                    onShare={() => share(product)}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {Array.isArray((topSharedQuery.data as any)?.items) && (topSharedQuery.data as any).items.length > 0 && (
+          {topSharedProducts.length > 0 && (
             <div className="mt-14">
               <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر مشاركة" : "Most shared"}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(((topSharedQuery.data as any)?.items ?? []) as any[]).slice(0, 8).map((item: any) => (
-                  <Card
-                    key={`shared-${item.product?.id ?? item.productId}`}
-                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
-                    onClick={() => navigate(`/product/${item.product?.id ?? item.productId}`)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base line-clamp-1">{item.product?.title ?? (language === "ar-IQ" ? "منتج" : "Product")}</CardTitle>
-                      <CardDescription className="text-sm line-clamp-1">{language === "ar-IQ" ? `عدد المشاركات: ${item.sharesCount ?? 0}` : `Shares: ${item.sharesCount ?? 0}`}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold">${Number(item.product?.price ?? 0)}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {topSharedProducts.slice(0, 8).map((product: any) => (
+                  <ProductCard
+                    key={`shared-${product.id}`}
+                    product={product}
+                    language={language}
+                    onOpen={() => navigate(`/product/${product.id}`)}
+                    onBuyNow={() => buyNow(product)}
+                    onShare={() => share(product)}
+                  />
                 ))}
               </div>
             </div>
@@ -368,7 +371,7 @@ export default function Home() {
         </section>
 
         {/* Categories Section */}
-        <section className="bg-card/30 !py-24 md:!py-28 lg:!py-32 border-y border-border">
+        <section className="bg-card/30 section-lg border-y border-border">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
               {language === 'ar-IQ' ? 'تصفح الأقسام' : 'Browse Categories'}
@@ -443,7 +446,7 @@ export default function Home() {
         </section>
 
         {/* Why Choose Section */}
-        <section className="container mx-auto px-4 !py-24 md:!py-28 lg:!py-32">
+        <section className="container mx-auto px-4 section-lg">
           <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
             {language === 'ar-IQ' ? 'لماذا تختار STAR LUX' : 'Why Choose STAR LUX'}
           </h2>
@@ -481,7 +484,7 @@ export default function Home() {
         </section>
 
         {/* Contact & Social Section */}
-        <section className="bg-gradient-to-br from-accent/10 via-background to-accent/5 !py-24 md:!py-28 lg:!py-32 border-y border-border">
+        <section className="bg-gradient-to-br from-accent/10 via-background to-accent/5 section-lg border-y border-border">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">
               {language === 'ar-IQ' ? 'تواصل معنا' : 'Contact Us'}
