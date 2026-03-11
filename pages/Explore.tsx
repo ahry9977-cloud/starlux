@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
+import { AppNavbar } from "@/components/AppNavbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { Search, ShoppingCart } from "lucide-react";
@@ -155,6 +156,7 @@ export default function Explore(): React.JSX.Element {
 
   return (
     <div className="min-h-screen bg-background" dir={direction}>
+      <AppNavbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSubmitSearch={handleSearch} />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>

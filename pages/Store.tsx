@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
+import { AppNavbar } from "@/components/AppNavbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { Share2, ShoppingCart, Store as StoreIcon } from "lucide-react";
@@ -31,6 +32,17 @@ export default function Store(): React.JSX.Element {
 
   const storeId = Number(params.id ?? 0);
   const [search, setSearch] = useState("");
+  const [navSearch, setNavSearch] = useState("");
+
+  const handleNavSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = navSearch.trim();
+    if (q) {
+      navigate(`/explore?search=${encodeURIComponent(q)}`);
+    } else {
+      navigate(`/explore`);
+    }
+  };
 
   const storeQuery = trpc.products.getStoreById.useQuery({ id: storeId }, { enabled: storeId > 0 });
   const productsQuery = trpc.products.getStoreProducts.useQuery(
@@ -90,6 +102,7 @@ export default function Store(): React.JSX.Element {
 
   return (
     <div className="min-h-screen bg-background" dir={direction}>
+      <AppNavbar searchQuery={navSearch} setSearchQuery={setNavSearch} onSubmitSearch={handleNavSearch} />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">

@@ -24,6 +24,7 @@ import { useMemo, useState } from "react";
 import { EnhancedMotionBackground } from "@/components/backgrounds/EnhancedMotionBackground";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ProductCard } from "@/components/ProductCard";
+import { AppNavbar } from "@/components/AppNavbar";
 
 // أيقونات مخصصة للتواصل
 const TikTokIcon = () => (
@@ -139,143 +140,7 @@ export default function Home() {
       <SEOHead {...seoData} />
       <EnhancedMotionBackground variant="particles" colorScheme="purple" intensity="vivid" parallax={true} />
       <div className="min-h-screen text-foreground relative z-10" dir={direction}>
-        {/* Navigation */}
-        <nav className="sticky top-0 z-50 bg-[#020617] border-b border-border">
-          <div className="container mx-auto px-4 h-[60px] flex items-center justify-between">
-            <div className="text-2xl font-bold text-accent">STAR LUX</div>
-            
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder={language === 'ar-IQ' ? 'ابحث عن منتجات...' : 'Search products...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 bg-background/50"
-                />
-              </div>
-            </form>
-
-            <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
-              <LanguageSwitcher />
-
-              <div className="hidden md:flex items-center gap-3">
-                {switchable && toggleTheme && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleTheme}
-                    className="gap-2 bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background hover:border-border"
-                    title={theme === "dark" ? "Light mode" : "Dark mode"}
-                  >
-                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </Button>
-                )}
-                {isAuthenticated ? (
-                  <>
-                    <span className="text-sm text-muted-foreground hidden md:block">{user?.name || user?.email}</span>
-                    {/* زر لوحة التحكم - يظهر فقط للأدمن */}
-                    {(user?.role === 'admin' || user?.role === 'sub_admin') && (
-                      <Button className="bg-red-600 hover:bg-red-700 text-white font-bold" size="sm" onClick={() => navigate('/admin-dashboard')}>
-                        لوحة التحكم
-                      </Button>
-                    )}
-                    {/* زر لوحة البائع */}
-                    {user?.role === 'seller' && (
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold" size="sm" onClick={() => navigate('/seller-dashboard')}>
-                        لوحة البائع
-                      </Button>
-                    )}
-                    {/* زر حسابي للمستخدمين العاديين */}
-                    {user?.role === 'user' && (
-                      <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')}>
-                        {language === 'ar-IQ' ? 'حسابي' : 'My Account'}
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <Button size="sm" onClick={() => navigate("/auth")}>
-                    {t('nav.signIn')}
-                  </Button>
-                )}
-              </div>
-
-              <div className="md:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => navigate("/")}
-                      className="justify-start">
-                      {language === "ar-IQ" ? "الرئيسية" : "Home"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/explore")}
-                      className="justify-start">
-                      {language === "ar-IQ" ? "استكشف المنتجات" : "Explore Products"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-
-                    {switchable && toggleTheme && (
-                      <DropdownMenuItem
-                        onClick={toggleTheme}
-                        className="justify-start"
-                      >
-                        {theme === "dark"
-                          ? language === "ar-IQ" ? "الوضع الفاتح" : "Light mode"
-                          : language === "ar-IQ" ? "الوضع الداكن" : "Dark mode"}
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuSeparator />
-
-                    {!isAuthenticated ? (
-                      <DropdownMenuItem onClick={() => navigate("/auth")} className="justify-start">
-                        {language === "ar-IQ" ? "تسجيل الدخول" : "Sign In"}
-                      </DropdownMenuItem>
-                    ) : (
-                      <>
-                        {(user?.role === 'admin' || user?.role === 'sub_admin') && (
-                          <DropdownMenuItem onClick={() => navigate('/admin-dashboard')} className="justify-start">
-                            {language === "ar-IQ" ? "لوحة التحكم" : "Admin Dashboard"}
-                          </DropdownMenuItem>
-                        )}
-                        {user?.role === 'seller' && (
-                          <DropdownMenuItem onClick={() => navigate('/seller-dashboard')} className="justify-start">
-                            {language === "ar-IQ" ? "لوحة البائع" : "Seller Dashboard"}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => navigate('/dashboard')} className="justify-start">
-                          {language === 'ar-IQ' ? 'حسابي' : 'My Account'}
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        {/* Mobile Search */}
-        <div className="md:hidden px-4 py-3 bg-card/50 border-b border-border">
-          <form onSubmit={handleSearch}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder={language === 'ar-IQ' ? 'ابحث عن منتجات...' : 'Search products...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4"
-              />
-            </div>
-          </form>
-        </div>
+        <AppNavbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSubmitSearch={handleSearch} />
 
         {/* Hero Section */}
         <section className="container mx-auto px-4 !py-20 md:!py-28 lg:!py-32">
