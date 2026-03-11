@@ -10,6 +10,32 @@ import React, { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
+const RECENT_SEARCHES_KEY = "star_lux_recent_searches";
+
+function loadRecentSearches(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((x) => String(x)).map((s) => s.trim()).filter(Boolean).slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(query: string) {
+  const q = String(query ?? "").trim();
+  if (!q) return;
+  const prev = loadRecentSearches();
+  const next = [q, ...prev.filter((p) => p.toLowerCase() !== q.toLowerCase())].slice(0, 10);
+  try {
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+}
+
 function safeParseImages(images: unknown): string[] {
   if (!images) return [];
   if (Array.isArray(images)) return images.filter((x) => typeof x === "string") as string[];
@@ -44,6 +70,11 @@ export default function Explore(): React.JSX.Element {
   const [suggestions, setSuggestions] = useState<Array<{ id: number; title: string }>>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
 
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    return loadRecentSearches();
+  });
+
   const { data, isLoading } = trpc.products.getAll.useQuery({ limit: 60, offset: 0 });
 
   const dbSearchEnabled = searchQuery.trim().length > 0;
@@ -69,6 +100,8 @@ export default function Explore(): React.JSX.Element {
     e.preventDefault();
     const q = searchQuery.trim();
     if (q) {
+      saveRecentSearch(q);
+      setRecentSearches(loadRecentSearches());
       navigate(`/explore?search=${encodeURIComponent(q)}`);
     } else {
       navigate(`/explore`);
@@ -185,6 +218,8 @@ export default function Explore(): React.JSX.Element {
                       type="button"
                       className="w-full text-left px-4 py-2 hover:bg-muted transition"
                       onClick={() => {
+                        saveRecentSearch(s.title);
+                        setRecentSearches(loadRecentSearches());
                         setSearchQuery(s.title);
                         setSuggestions([]);
                         navigate(`/explore?search=${encodeURIComponent(s.title)}`);
@@ -201,6 +236,28 @@ export default function Explore(): React.JSX.Element {
                 </div>
               )}
             </div>
+
+            {recentSearches.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {recentSearches.slice(0, 10).map((q) => (
+                  <Button
+                    key={`recent-${q}`}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 rounded-full px-3"
+                    onClick={() => {
+                      saveRecentSearch(q);
+                      setRecentSearches(loadRecentSearches());
+                      setSearchQuery(q);
+                      navigate(`/explore?search=${encodeURIComponent(q)}`);
+                    }}
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
+            )}
           </form>
         </div>
 
@@ -214,6 +271,8 @@ export default function Explore(): React.JSX.Element {
                 size="sm"
                 variant="outline"
                 onClick={() => {
+                  saveRecentSearch(didYouMean);
+                  setRecentSearches(loadRecentSearches());
                   setSearchQuery(didYouMean);
                   navigate(`/explore?search=${encodeURIComponent(didYouMean)}`);
                 }}
