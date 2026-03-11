@@ -383,10 +383,32 @@ export const productReviews = pgTable(
     userId: integer("user_id").notNull(),
     rating: doublePrecision("rating").notNull(),
     reviewText: text("review_text"),
+    helpfulCount: integer("helpful_count").notNull().default(0),
+    notHelpfulCount: integer("not_helpful_count").notNull().default(0),
+    reportCount: integer("report_count").notNull().default(0),
+    sellerResponse: text("seller_response"),
+    sellerResponseAt: timestamp("seller_response_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (t) => ({
     userProductUnique: uniqueIndex("product_reviews_user_product_unique").on(t.userId, t.productId),
+  })
+);
+
+export const reviewInteractions = pgTable(
+  "review_interactions",
+  {
+    id: serial("id").primaryKey(),
+    reviewId: integer("review_id").notNull(),
+    userId: integer("user_id").notNull(),
+    interactionType: varchar("interaction_type", { length: 20 }).notNull(),
+    reportReason: varchar("report_reason", { length: 30 }),
+    reportDetails: text("report_details"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    interactionUnique: uniqueIndex("review_interactions_unique").on(t.reviewId, t.userId, t.interactionType),
   })
 );
 
