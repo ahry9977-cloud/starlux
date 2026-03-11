@@ -53,13 +53,10 @@
    ============================================ */
 
 :root {
-  /* Primary - Neon Violet */
-  --primary: oklch(0.7 0.28 290);
-  --primary-foreground: oklch(0.98 0 0);
-  
-  /* Sidebar Primary */
-  --sidebar-primary: oklch(0.7 0.28 290);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --primary: #6C2BD9;
+  --primary-foreground: #FFFFFF;
+  --sidebar-primary: #6C2BD9;
+  --sidebar-primary-foreground: #FFFFFF;
   
   /* Charts - Vibrant gradient palette */
   --chart-1: oklch(0.86 0.18 90);
@@ -68,47 +65,40 @@
   --chart-4: oklch(0.68 0.28 270);
   --chart-5: oklch(0.82 0.16 105);
   
-  --radius: 0.625rem;
-  
-  /* Light mode surfaces (slightly tinted to match neon brand) */
-  --background: oklch(0.985 0.015 285);
-  --foreground: oklch(0.18 0.04 285);
-  
-  --card: oklch(0.975 0.02 285);
-  --card-foreground: oklch(0.18 0.04 285);
-  
-  /* Popover */
-  --popover: oklch(0.975 0.02 285);
-  --popover-foreground: oklch(0.18 0.04 285);
-  
-  /* Secondary - Vibrant purple */
-  --secondary: oklch(0.75 0.28 325);
-  --secondary-foreground: oklch(0.98 0 0);
-  
-  /* Muted - Better contrast */
-  --muted: oklch(0.945 0.02 285);
-  --muted-foreground: oklch(0.42 0.07 285);
-  
-  /* Accent - Neon Gold */
-  --accent: oklch(0.86 0.18 90);
-  --accent-foreground: oklch(0.12 0.02 240);
+  --radius: 1rem;
+
+  --background: #0B0F1A;
+  --foreground: #FFFFFF;
+
+  --card: #111827;
+  --card-foreground: #FFFFFF;
+
+  --popover: #111827;
+  --popover-foreground: #FFFFFF;
+
+  --secondary: #0F172A;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #0F172A;
+  --muted-foreground: #9CA3AF;
+
+  --accent: #F59E0B;
+  --accent-foreground: #0F172A;
   
   /* Destructive - Vibrant red */
   --destructive: oklch(0.65 0.28 25);
   --destructive-foreground: oklch(0.98 0 0);
   
-  /* Borders - crisp but soft */
-  --border: oklch(0.84 0.03 285);
-  --input: oklch(0.955 0.02 285);
-  --ring: oklch(0.86 0.18 90);
+  --border: #1F2937;
+  --input: #1F2937;
+  --ring: #F59E0B;
   
-  /* Sidebar */
-  --sidebar: oklch(0.975 0.02 285);
-  --sidebar-foreground: oklch(0.18 0.04 285);
-  --sidebar-accent: oklch(0.75 0.28 325);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.84 0.03 285);
-  --sidebar-ring: oklch(0.86 0.18 90);
+  --sidebar: #020617;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-accent: #6C2BD9;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #1F2937;
+  --sidebar-ring: #F59E0B;
   
   /* Custom colors for enhanced UI */
   --glow-gold: oklch(0.86 0.18 90);
@@ -121,46 +111,36 @@
 }
 
 .dark {
-  /* Primary - Neon Violet */
-  --primary: oklch(0.7 0.28 290);
-  --primary-foreground: oklch(0.98 0 0);
-  
-  /* Sidebar Primary */
-  --sidebar-primary: oklch(0.7 0.28 290);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  
-  /* Background - Slightly lighter for better visibility */
-  --background: oklch(0.12 0.015 240);
-  --foreground: oklch(0.96 0.01 80);
-  
-  /* Cards - More visible separation */
-  --card: oklch(0.16 0.02 240);
-  --card-foreground: oklch(0.96 0.01 80);
-  
-  /* Popover */
-  --popover: oklch(0.16 0.02 240);
-  --popover-foreground: oklch(0.96 0.01 80);
-  
-  /* Secondary - Neon Magenta */
-  --secondary: oklch(0.75 0.28 325);
-  --secondary-foreground: oklch(0.98 0 0);
-  
-  /* Muted - Better contrast */
-  --muted: oklch(0.2 0.025 240);
-  --muted-foreground: oklch(0.72 0.06 240);
-  
-  /* Accent - Neon Gold */
-  --accent: oklch(0.86 0.18 90);
-  --accent-foreground: oklch(0.12 0.02 240);
-  
-  /* Destructive - Vibrant red */
-  --destructive: oklch(0.65 0.28 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  
-  /* Borders - More visible */
-  --border: oklch(0.28 0.04 240);
-  --input: oklch(0.18 0.025 240);
-  --ring: oklch(0.86 0.18 90);
+  --primary: #6C2BD9;
+  --primary-foreground: #FFFFFF;
+
+  --sidebar-primary: #6C2BD9;
+  --sidebar-primary-foreground: #FFFFFF;
+
+  --background: #0B0F1A;
+  --foreground: #FFFFFF;
+
+  --card: #111827;
+  --card-foreground: #FFFFFF;
+
+  --popover: #111827;
+  --popover-foreground: #FFFFFF;
+
+  --secondary: #0F172A;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #0F172A;
+  --muted-foreground: #9CA3AF;
+
+  --accent: #F59E0B;
+  --accent-foreground: #0F172A;
+
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #1F2937;
+  --input: #1F2937;
+  --ring: #F59E0B;
   
   /* Charts - Vibrant gradient palette */
   --chart-1: oklch(0.86 0.18 90);
@@ -169,13 +149,12 @@
   --chart-4: oklch(0.68 0.28 270);
   --chart-5: oklch(0.82 0.16 105);
   
-  /* Sidebar */
-  --sidebar: oklch(0.14 0.02 240);
-  --sidebar-foreground: oklch(0.96 0.01 80);
-  --sidebar-accent: oklch(0.75 0.28 325);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.28 0.04 240);
-  --sidebar-ring: oklch(0.86 0.18 90);
+  --sidebar: #020617;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-accent: #6C2BD9;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #1F2937;
+  --sidebar-ring: #F59E0B;
 }
 
 @layer base {
@@ -191,6 +170,31 @@
     font-family: 'Inter', sans-serif;
     margin: 0;
     min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  p,
+  span,
+  input,
+  button {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  small {
+    font-size: 14px;
+    line-height: 1.6;
   }
   
   /* Enhanced Engineering Grid Background */

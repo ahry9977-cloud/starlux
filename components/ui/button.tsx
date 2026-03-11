@@ -15,17 +15,17 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
-        variant === "default" && "bg-blue-600 text-white hover:bg-blue-700",
-        variant === "secondary" && "bg-slate-800 text-white hover:bg-slate-700",
-        variant === "ghost" && "bg-transparent hover:bg-slate-800 text-white",
-        variant === "destructive" && "bg-red-600 text-white hover:bg-red-700",
-        variant === "outline" &&
-          "border border-slate-700 bg-transparent text-white hover:bg-slate-800",
-        size === "default" && "h-10 px-4 py-2",
-        size === "sm" && "h-9 px-3",
-        size === "lg" && "h-11 px-6",
-        size === "icon" && "h-9 w-9 p-0",
+        "inline-flex items-center justify-center rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
+        variant === "default" &&
+          "bg-gradient-to-r from-[#6C2BD9] to-[#9333EA] text-white hover:opacity-95",
+        variant === "secondary" && "bg-[#0F172A] text-white hover:bg-[#111b33]",
+        variant === "ghost" && "bg-transparent hover:bg-white/5 text-white",
+        variant === "destructive" && "bg-[#DC2626] text-white hover:bg-[#b91c1c]",
+        variant === "outline" && "border border-[#1F2937] bg-transparent text-white hover:bg-white/5",
+        size === "default" && "h-12 px-5",
+        size === "sm" && "h-10 px-4",
+        size === "lg" && "h-12 px-7",
+        size === "icon" && "h-10 w-10 p-0",
         className
       )}
       {...props}

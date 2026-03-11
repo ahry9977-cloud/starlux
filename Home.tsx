@@ -139,8 +139,8 @@ export default function Home() {
       <EnhancedMotionBackground variant="particles" colorScheme="purple" intensity="vivid" parallax={true} />
       <div className="min-h-screen text-foreground relative z-10" dir={direction}>
         {/* Navigation */}
-        <nav className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <nav className="sticky top-0 z-50 bg-[#020617] border-b border-border">
+          <div className="container mx-auto px-4 h-[60px] flex items-center justify-between">
             <div className="text-2xl font-bold text-accent">STAR LUX</div>
             
             {/* Search Bar */}
