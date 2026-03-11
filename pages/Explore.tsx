@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ProductCard } from "@/components/ProductCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { Search, ShoppingCart } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 function safeParseImages(images: unknown): string[] {
   if (!images) return [];
@@ -24,6 +26,7 @@ function safeParseImages(images: unknown): string[] {
 export default function Explore(): React.JSX.Element {
   const { language, direction } = useLanguage();
   const [location, navigate] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   const initialSearch = useMemo(() => {
     const qIndex = location.indexOf("?");
@@ -224,31 +227,37 @@ export default function Explore(): React.JSX.Element {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {products.map((product: any) => {
-                const imgs = safeParseImages(product.images);
-                const img = imgs[0];
-                return (
-                  <Card
-                    key={product.id}
-                    className="border-border/50 bg-card hover:bg-card/80 transition-all cursor-pointer overflow-hidden"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
-                    <div className="h-40 bg-muted flex items-center justify-center">
-                      {img ? <img src={img} alt={product.title} className="w-full h-full object-cover" /> : <ShoppingCart className="w-10 h-10 text-muted-foreground" />}
-                    </div>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base line-clamp-1">{product.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{product.description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold">${Number(product.price ?? 0)}</p>
-                        <p className="text-xs text-muted-foreground">{language === "ar-IQ" ? `المخزون: ${product.stock ?? 0}` : `Stock: ${product.stock ?? 0}`}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {products.map((product: any) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  language={language}
+                  onOpen={() => navigate(`/product/${product.id}`)}
+                  onBuyNow={async () => {
+                    if (!isAuthenticated) {
+                      navigate("/auth");
+                      return;
+                    }
+                    const buyNowMutation = trpc.cart.buyNow.useMutation();
+                    const res = await buyNowMutation.mutateAsync({
+                      productId: Number(product.id),
+                      quantity: 1,
+                      paymentMethod: "visa",
+                    } as any);
+                    if ((res as any)?.orderId) {
+                      navigate(
+                        `/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`
+                      );
+                    }
+                  }}
+                  onShare={async () => {
+                    const shareMutation = trpc.sharing.track.useMutation();
+                    const url = `${window.location.origin}/product/${product.id}`;
+                    await navigator.clipboard.writeText(url);
+                    await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product.id) } as any);
+                  }}
+                />
+              ))}
             </div>
 
             {products.length === 0 && (
