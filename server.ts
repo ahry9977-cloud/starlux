@@ -69,11 +69,21 @@ async function bootstrapAdminFromEnv() {
   console.log("[bootstrap-admin] updated admin user", { email, userId: existing.id });
 }
 
-if (process.env.NODE_ENV === "production") {
+const isReverseProxyHost =
+  process.env.NODE_ENV === "production" ||
+  Boolean(process.env.RAILWAY_ENVIRONMENT) ||
+  Boolean(process.env.RAILWAY_PROJECT_ID) ||
+  Boolean(process.env.RAILWAY_SERVICE_ID) ||
+  Boolean(process.env.RENDER) ||
+  Boolean(process.env.FLY_APP_NAME) ||
+  Boolean(process.env.HEROKU_APP_NAME);
+
+if (isReverseProxyHost) {
   // Required when running behind reverse proxies (Railway/Render/Nginx)
   // so req.protocol and x-forwarded-proto are handled correctly.
   app.set("trust proxy", 1);
 }
+
 
 function getCorsOrigins(): true | string[] {
   const raw = process.env.CORS_ORIGINS ?? "";
