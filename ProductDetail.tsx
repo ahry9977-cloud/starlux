@@ -6,6 +6,7 @@ import { StarRating, RatingDistribution, ReviewCard, AddRatingForm } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { OptimizedImage } from './OptimizedImage';
 import { 
   Loader2, ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, 
   Star, PenLine, Truck, Shield, RefreshCw, ArrowRight, Store, CreditCard
@@ -207,10 +208,11 @@ export default function ProductDetail() {
             {/* الصورة الرئيسية */}
             <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
               {images.length > 0 ? (
-                <img
+                <OptimizedImage
                   src={images[selectedImage]}
                   alt={product.title}
-                  className="w-full h-full object-cover"
+                  priority
+                  className="w-full h-full"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -249,7 +251,7 @@ export default function ProductDetail() {
                       ${selectedImage === index ? 'border-primary ring-2 ring-primary/30' : 'border-transparent'}
                     `}
                   >
-                    <img src={image} alt="" className="w-full h-full object-cover" />
+                    <OptimizedImage src={image} alt="" className="w-full h-full" />
                   </button>
                 ))}
               </div>

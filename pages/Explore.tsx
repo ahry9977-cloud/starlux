@@ -55,6 +55,9 @@ export default function Explore(): React.JSX.Element {
   const [location, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
 
+  const buyNowMutation = trpc.cart.buyNow.useMutation();
+  const shareMutation = trpc.sharing.track.useMutation();
+
   const initialSearch = useMemo(() => {
     const qIndex = location.indexOf("?");
     if (qIndex === -1) return "";
@@ -95,6 +98,11 @@ export default function Explore(): React.JSX.Element {
     const list = (data as any)?.products ?? [];
     return Array.isArray(list) ? list : [];
   }, [aiResults, data, dbSearchData, searchQuery]);
+
+  const recommendedProducts = useMemo(() => {
+    const list = (data as any)?.products ?? [];
+    return Array.isArray(list) ? list.slice(0, 8) : [];
+  }, [data]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,7 +307,6 @@ export default function Explore(): React.JSX.Element {
                       navigate("/auth");
                       return;
                     }
-                    const buyNowMutation = trpc.cart.buyNow.useMutation();
                     const res = await buyNowMutation.mutateAsync({
                       productId: Number(product.id),
                       quantity: 1,
@@ -312,7 +319,6 @@ export default function Explore(): React.JSX.Element {
                     }
                   }}
                   onShare={async () => {
-                    const shareMutation = trpc.sharing.track.useMutation();
                     const url = `${window.location.origin}/product/${product.id}`;
                     await navigator.clipboard.writeText(url);
                     await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product.id) } as any);
@@ -324,6 +330,56 @@ export default function Explore(): React.JSX.Element {
             {products.length === 0 && (
               <div className="py-16 text-center">
                 <p className="text-muted-foreground">{language === "ar-IQ" ? "لا توجد منتجات مطابقة" : "No matching products"}</p>
+              </div>
+            )}
+
+            {searchQuery.trim() && products.length === 0 && recommendedProducts.length > 0 && (
+              <div className="mt-10">
+                <div className="flex items-end justify-between gap-4 mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      {language === "ar-IQ" ? "منتجات مقترحة" : "Recommended Products"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {language === "ar-IQ" ? "قد تعجبك هذه المنتجات" : "You might like these"}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/explore")}>
+                    {language === "ar-IQ" ? "عرض المزيد" : "See more"}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {recommendedProducts.map((product: any) => (
+                    <ProductCard
+                      key={`rec-${product.id}`}
+                      product={product}
+                      language={language}
+                      onOpen={() => navigate(`/product/${product.id}`)}
+                      onBuyNow={async () => {
+                        if (!isAuthenticated) {
+                          navigate("/auth");
+                          return;
+                        }
+                        const res = await buyNowMutation.mutateAsync({
+                          productId: Number(product.id),
+                          quantity: 1,
+                          paymentMethod: "visa",
+                        } as any);
+                        if ((res as any)?.orderId) {
+                          navigate(
+                            `/payment/${(res as any).orderId}?amount=${encodeURIComponent(String((res as any).total ?? 0))}`
+                          );
+                        }
+                      }}
+                      onShare={async () => {
+                        const url = `${window.location.origin}/product/${product.id}`;
+                        await navigator.clipboard.writeText(url);
+                        await shareMutation.mutateAsync({ platform: "copy_link", productId: Number(product.id) } as any);
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </>

@@ -123,14 +123,14 @@ const PremiumLogin: React.FC = () => {
       <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
         {/* Login Card */}
         <div 
-          className="w-full max-w-md"
+          className="w-full max-w-[420px]"
           style={{
             background: 'rgba(15, 23, 42, 0.85)',
             backdropFilter: 'blur(20px)',
-            borderRadius: '24px',
+            borderRadius: '12px',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 100px rgba(139, 92, 246, 0.1)',
-            padding: '48px',
+            padding: '32px',
           }}
         >
           {/* Header with Back Button and Sound Settings */}
@@ -189,7 +189,8 @@ const PremiumLogin: React.FC = () => {
                   placeholder="أدخل بريدك الإلكتروني"
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
                   style={{
-                    padding: '16px 48px 16px 16px',
+                    height: '48px',
+                    padding: '0 48px 0 16px',
                     fontSize: '16px',
                   }}
                   disabled={isLoading}
@@ -217,7 +218,8 @@ const PremiumLogin: React.FC = () => {
                   placeholder="أدخل كلمة المرور"
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
                   style={{
-                    padding: '16px 48px',
+                    height: '48px',
+                    padding: '0 48px',
                     fontSize: '16px',
                   }}
                   disabled={isLoading}
@@ -239,8 +241,9 @@ const PremiumLogin: React.FC = () => {
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               style={{
-                padding: '18px 32px',
-                fontSize: '18px',
+                height: '48px',
+                padding: '0 16px',
+                fontSize: '16px',
                 marginBottom: '24px',
               }}
             >
