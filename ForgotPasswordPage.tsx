@@ -677,7 +677,7 @@ export default function ForgotPasswordPage() {
               </div>
 
               <Button
-                onClick={() => setLocation('/login')}
+                onClick={() => setLocation('/auth')}
                 className="w-full h-14 relative overflow-hidden group bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 hover:from-green-500 hover:via-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -692,7 +692,7 @@ export default function ForgotPasswordPage() {
               <p className="text-slate-400">
                 تذكرت كلمة المرور؟{" "}
                 <button
-                  onClick={() => setLocation("/login")}
+                  onClick={() => setLocation("/auth")}
                   className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors duration-300 hover:underline"
                 >
                   تسجيل الدخول

@@ -88,7 +88,7 @@ export default function AccountTypePage() {
           
           {/* Back Button */}
           <button
-            onClick={() => setLocation("/login")}
+            onClick={() => setLocation("/auth")}
             className="absolute top-6 left-6 p-2.5 text-slate-400 hover:text-white transition-all duration-300 rounded-xl hover:bg-slate-800/50 group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
@@ -294,9 +294,9 @@ export default function AccountTypePage() {
             }`}
           >
             <p className="text-slate-400">
-              لديك حساب بالفعل؟{" "}
+              لديك حساب بالفعل?{" "}
               <button
-                onClick={() => setLocation("/login")}
+                onClick={() => setLocation("/auth")}
                 className="text-purple-400 hover:text-purple-300 font-semibold transition-colors duration-300 hover:underline"
               >
                 تسجيل الدخول

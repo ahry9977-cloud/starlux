@@ -659,7 +659,7 @@ export default function BuyerRegisterPage() {
             <p className="text-slate-400">
               لديك حساب بالفعل؟{" "}
               <button
-                onClick={() => setLocation("/login")}
+                onClick={() => setLocation("/auth")}
                 className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors duration-300 hover:underline"
               >
                 تسجيل الدخول

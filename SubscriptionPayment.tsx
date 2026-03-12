@@ -90,7 +90,7 @@ export default function SubscriptionPayment() {
       setPaymentSubmitted(true);
 
       if (isNewRegistration && email) {
-        navigate(`/login?email=${encodeURIComponent(email)}`);
+        navigate(`/auth?email=${encodeURIComponent(email)}`);
       }
     } catch (e: any) {
       toast.error(e?.message || 'فشل تأكيد الدفع');
