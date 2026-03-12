@@ -90,7 +90,7 @@ export default function Cart() {
     );
   }
 
-  const cartItems = (cartQuery.data || []) as any[];
+  const cartItems = (Array.isArray(cartQuery.data) ? cartQuery.data : []) as any[];
   const isLoading = cartQuery.isLoading;
 
   // Calculate totals

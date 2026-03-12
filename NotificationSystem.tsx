@@ -179,6 +179,17 @@ function getTimeAgo(date: Date): string {
   return new Date(date).toLocaleDateString('ar-IQ');
 }
 
+function safeParseJson(input: unknown): any {
+  if (input == null) return undefined;
+  if (typeof input === 'object') return input;
+  if (typeof input !== 'string') return undefined;
+  try {
+    return JSON.parse(input);
+  } catch {
+    return undefined;
+  }
+}
+
 // المكون الرئيسي لنظام الإشعارات
 export default function NotificationSystem() {
   const { user } = useAuth();
@@ -211,7 +222,7 @@ export default function NotificationSystem() {
         priority: n.priority as NotificationPriority,
         isRead: n.isRead,
         createdAt: new Date(n.createdAt),
-        data: n.data ? JSON.parse(n.data) : undefined,
+        data: safeParseJson(n.data),
         actionUrl: n.actionUrl,
       }));
 

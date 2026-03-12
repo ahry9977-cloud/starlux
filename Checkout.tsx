@@ -113,7 +113,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       toast.error('يجب تسجيل الدخول أولاً');
-      navigate('/login');
+      navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
