@@ -9,6 +9,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Loader2, Star, PenLine, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
+function safeParseStringArray(input: unknown): string[] {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.filter((x) => typeof x === 'string') as string[];
+  if (typeof input !== 'string') return [];
+  try {
+    const parsed = JSON.parse(input);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x) => typeof x === 'string') as string[];
+  } catch {
+    return [];
+  }
+}
+
 export default function ProductReviews() {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -258,7 +271,7 @@ export default function ProductReviews() {
                 <Button
                   variant="outline"
                   className="w-full mt-6"
-                  onClick={() => setLocation('/login')}
+                  onClick={() => setLocation('/auth')}
                 >
                   سجل دخولك لإضافة تقييم
                 </Button>
@@ -313,9 +326,9 @@ export default function ProductReviews() {
                       userImage: review.userImage,
                       reviewTitle: review.reviewTitle,
                       reviewContent: review.reviewContent,
-                      pros: review.pros ? JSON.parse(review.pros) : [],
-                      cons: review.cons ? JSON.parse(review.cons) : [],
-                      reviewImages: review.reviewImages ? JSON.parse(review.reviewImages) : [],
+                      pros: safeParseStringArray(review.pros),
+                      cons: safeParseStringArray(review.cons),
+                      reviewImages: safeParseStringArray(review.reviewImages),
                       helpfulCount: review.helpfulCount || 0,
                       notHelpfulCount: review.notHelpfulCount || 0,
                       isVerifiedPurchase: review.rating?.isVerifiedPurchase || review.isVerifiedPurchase || false,

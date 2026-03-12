@@ -145,10 +145,32 @@ export default function ProductDetail() {
       </div>
     );
   }
-  
-  const images = product.images || [];
+
+  const images = (() => {
+    const raw = (product as any)?.images;
+    if (!raw) return [] as string[];
+    if (Array.isArray(raw)) return raw.filter((x) => typeof x === 'string') as string[];
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((x) => typeof x === 'string') as string[];
+      } catch {
+        return [] as string[];
+      }
+    }
+    return [] as string[];
+  })();
   const summary = ratingsData?.summary;
   const topReviews = ratingsData?.ratings || [];
+
+  useEffect(() => {
+    setSelectedImage((prev) => {
+      if (images.length === 0) return 0;
+      if (prev < 0) return 0;
+      if (prev >= images.length) return images.length - 1;
+      return prev;
+    });
+  }, [images.length]);
 
   const handleShare = async (platform: 'whatsapp' | 'telegram' | 'facebook' | 'twitter' | 'copy_link') => {
     const url = `${window.location.origin}/product/${productId}`;
