@@ -171,10 +171,14 @@ export default function NotificationCenterPage() {
     convertCurrencyMutation.mutate({ fromCurrency, toCurrency, amount });
   };
 
-  const notifications = notificationsData?.notifications || [];
-  const total = notificationsData?.total || 0;
-  const unreadCount = notificationsData?.unreadCount || 0;
+  const notifications = (Array.isArray((notificationsData as any)?.notifications)
+    ? (notificationsData as any).notifications
+    : []) as any[];
+  const total = Number((notificationsData as any)?.total ?? 0) || 0;
+  const unreadCount = Number((notificationsData as any)?.unreadCount ?? 0) || 0;
   const totalPages = Math.ceil(total / limit);
+
+  const currenciesList = (Array.isArray(currencies) ? currencies : []) as any[];
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -570,7 +574,7 @@ export default function NotificationCenterPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {currencies?.map((c: any) => (
+                        {currenciesList.map((c: any) => (
                           <SelectItem key={c.code} value={c.code}>
                             {c.symbol} {c.nameAr} ({c.code})
                           </SelectItem>
@@ -594,7 +598,7 @@ export default function NotificationCenterPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {currencies?.map((c: any) => (
+                        {currenciesList.map((c: any) => (
                           <SelectItem key={c.code} value={c.code}>
                             {c.symbol} {c.nameAr} ({c.code})
                           </SelectItem>
@@ -634,7 +638,7 @@ export default function NotificationCenterPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {currencies?.map((c: any) => (
+                  {currenciesList.map((c: any) => (
                     <div key={c.code} className="p-3 border rounded-lg text-center">
                       <div className="text-2xl font-bold">{c.symbol}</div>
                       <div className="text-sm font-medium">{c.code}</div>
