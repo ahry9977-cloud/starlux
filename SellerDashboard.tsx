@@ -140,6 +140,11 @@ export default function SellerDashboard() {
   });
   const categoriesQuery = trpc.products.getCategories.useQuery();
 
+  const categories = (Array.isArray(categoriesQuery.data) ? categoriesQuery.data : []) as any[];
+  const sellerProducts = (Array.isArray((productsQuery.data as any)?.products) ? (productsQuery.data as any).products : []) as any[];
+  const sellerOrders = (Array.isArray((ordersQuery.data as any)?.orders) ? (ordersQuery.data as any).orders : []) as any[];
+  const sellerPaymentMethods = (Array.isArray(paymentMethodsQuery.data) ? paymentMethodsQuery.data : []) as any[];
+
   // tRPC mutations
   const createStoreMutation = trpc.seller.createStore.useMutation({
     onSuccess: () => {
@@ -665,7 +670,7 @@ export default function SellerDashboard() {
                                 <SelectValue placeholder="اختر القسم" />
                               </SelectTrigger>
                               <SelectContent>
-                                {categoriesQuery.data?.map((cat: any) => (
+                                {categories.map((cat: any) => (
                                   <SelectItem key={cat.id} value={cat.id.toString()}>
                                     {cat.nameAr}
                                   </SelectItem>
@@ -708,7 +713,7 @@ export default function SellerDashboard() {
 
                   {/* Products Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {productsQuery.data?.products.map((product: any) => (
+                    {sellerProducts.map((product: any) => (
                       <Card key={product.id} className="border-amber-200 bg-white/80 backdrop-blur-lg overflow-hidden">
                         <div className="h-40 bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
                           <Package className="w-16 h-16 text-amber-300" />
@@ -749,7 +754,7 @@ export default function SellerDashboard() {
                     ))}
                   </div>
 
-                  {productsQuery.data?.products.length === 0 && (
+                  {sellerProducts.length === 0 && (
                     <Card className="border-amber-200 bg-white/80 backdrop-blur-lg">
                       <CardContent className="p-12 text-center">
                         <Package className="w-16 h-16 text-amber-300 mx-auto mb-4" />
@@ -767,7 +772,7 @@ export default function SellerDashboard() {
                   <h1 className="text-2xl font-bold text-amber-800">الطلبات</h1>
 
                   <div className="space-y-4">
-                    {ordersQuery.data?.orders.map((order: any) => (
+                    {sellerOrders.map((order: any) => (
                       <Card key={order.id} className="border-amber-200 bg-white/80 backdrop-blur-lg">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -855,7 +860,7 @@ export default function SellerDashboard() {
                     ))}
                   </div>
 
-                  {ordersQuery.data?.orders.length === 0 && (
+                  {sellerOrders.length === 0 && (
                     <Card className="border-amber-200 bg-white/80 backdrop-blur-lg">
                       <CardContent className="p-12 text-center">
                         <ShoppingCart className="w-16 h-16 text-amber-300 mx-auto mb-4" />
@@ -929,7 +934,7 @@ export default function SellerDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {paymentMethodsQuery.data?.map((method: any) => (
+                    {sellerPaymentMethods.map((method: any) => (
                       <Card key={method.id} className="border-amber-200 bg-white/80 backdrop-blur-lg">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -964,7 +969,7 @@ export default function SellerDashboard() {
                     ))}
                   </div>
 
-                  {paymentMethodsQuery.data?.length === 0 && (
+                  {sellerPaymentMethods.length === 0 && (
                     <Card className="border-amber-200 bg-white/80 backdrop-blur-lg">
                       <CardContent className="p-12 text-center">
                         <CreditCard className="w-16 h-16 text-amber-300 mx-auto mb-4" />
