@@ -2131,6 +2131,7 @@ const chatbotRouter = router({
         appendChatMessage,
         createChatConversation,
         getChatMessages,
+        getChatMemorySnippets,
         logSearchQuery,
         searchProductsByQuery,
       } = await import("./db");
@@ -2153,6 +2154,24 @@ const chatbotRouter = router({
         role: (String(m.role) as any) || "user",
         content: String(m.content ?? ""),
       }));
+
+      const memory = await getChatMemorySnippets({
+        userId: ctx.user?.id ?? null,
+        query: input.message,
+        limit: 6,
+      });
+
+      const memoryBlock = (memory ?? [])
+        .slice(0, 6)
+        .map((r: any) => {
+          const corrected = String(r.corrected_answer ?? "").trim();
+          const rating = Number(r.rating ?? 0);
+          const content = String(r.content ?? "").trim();
+          return corrected
+            ? `- [feedback:${rating}] Q/A snippet: ${content}\n  corrected: ${corrected}`
+            : `- snippet: ${content}`;
+        })
+        .join("\n");
       
       const resolveLanguageBucket = (raw: unknown): 'ar' | 'ur' | 'en' => {
         const lang = String(raw ?? '').trim();
@@ -2254,6 +2273,15 @@ Answer directly first, then propose one practical next step.`;
               role: "system",
               content:
                 langBucket === "ar"
+                  ? `ذاكرة/تصحيحات سابقة من المستخدم (لتحسين الدقة):\n${memoryBlock || 'لا يوجد'}`
+                  : langBucket === "ur"
+                  ? `پچھلی یادداشت/درستگیاں (درست جواب کے لیے):\n${memoryBlock || 'none'}`
+                  : `User memory/corrections (for accuracy):\n${memoryBlock || 'none'}`,
+            },
+            {
+              role: "system",
+              content:
+                langBucket === "ar"
                   ? `منتجات مقترحة من قاعدة البيانات (قد تساعد في الإجابة):\n${JSON.stringify(productHints)}`
                   : langBucket === "ur"
                   ? `ڈیٹابیس سے تجویز کردہ مصنوعات (جواب میں مدد کر سکتی ہیں):\n${JSON.stringify(productHints)}`
@@ -2270,8 +2298,8 @@ Answer directly first, then propose one practical next step.`;
             ? 'معذرت، میں آپ کی درخواست پروسیس نہیں کر سکا۔ براہِ کرم دوبارہ کوشش کریں۔'
             : 'Sorry, I couldn\'t process your request. Please try again.');
         
-        await appendChatMessage(conversationId, "assistant", content);
-        return { response: content, conversationId };
+        const assistantMessageId = await appendChatMessage(conversationId, "assistant", content);
+        return { response: content, conversationId, assistantMessageId };
       } catch (error) {
         console.error('ChatBot LLM error:', error);
 
@@ -2336,10 +2364,37 @@ Answer directly first, then propose one practical next step.`;
             : '🤖 Got it. Are you asking about (buying / payment / shipping / returns / selling)? Reply with one word and I’ll guide you step-by-step.';
         })();
 
+        const assistantMessageId = await appendChatMessage(conversationId, "assistant", response);
         return { 
           response,
+          conversationId,
+          assistantMessageId,
         };
       }
+    }),
+
+  feedback: protectedProcedure
+    .input(
+      z.object({
+        conversationId: z.number(),
+        messageId: z.number(),
+        rating: z.enum(["up", "down"]),
+        correctedAnswer: z.string().max(2000).optional(),
+        notes: z.string().max(2000).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { addChatFeedback } = await import("./db");
+      const rating = input.rating === "up" ? 1 : -1;
+      const id = await addChatFeedback({
+        conversationId: input.conversationId,
+        messageId: input.messageId,
+        userId: ctx.user?.id ?? null,
+        rating: rating as any,
+        correctedAnswer: input.correctedAnswer ?? null,
+        notes: input.notes ?? null,
+      });
+      return { ok: true, id };
     }),
 });
 const subscriptionRouter = router({

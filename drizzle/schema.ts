@@ -503,3 +503,14 @@ export const chatMessages = pgTable("chat_messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+export const chatFeedback = pgTable("chat_feedback", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  messageId: integer("message_id").notNull(),
+  userId: integer("user_id"),
+  rating: integer("rating").notNull(),
+  correctedAnswer: text("corrected_answer"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});

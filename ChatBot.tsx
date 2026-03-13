@@ -19,6 +19,7 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestions?: string[];
+  serverMessageId?: number;
 }
 
 // أنواع المستخدمين
@@ -181,6 +182,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<number | null>(null);
   const [context, setContext] = useState<ConversationContext>({
     topic: null,
     lastQuestions: [],
@@ -196,6 +198,29 @@ export default function ChatBot() {
   const langBase = String(language ?? '').split('-')[0]?.toLowerCase();
   const langBucket: 'ar' | 'ur' | 'en' = langBase === 'ar' ? 'ar' : langBase === 'ur' ? 'ur' : 'en';
   const isArabic = langBucket === 'ar';
+
+  const sendFeedback = useCallback(
+    async (opts: { conversationId: number; messageId: number; rating: 'up' | 'down'; correctedAnswer?: string }) => {
+      try {
+        await fetch('/api/trpc/chatbot.feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            json: {
+              conversationId: opts.conversationId,
+              messageId: opts.messageId,
+              rating: opts.rating,
+              correctedAnswer: opts.correctedAnswer,
+            },
+          }),
+        });
+      } catch (e) {
+        console.error('feedback error', e);
+      }
+    },
+    []
+  );
   
   // تحديد دور المستخدم
   const userRole: UserRole = user?.role === 'admin' ? 'admin' 
@@ -357,6 +382,8 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
       
       if (response2.ok) {
         const data = await response2.json();
+        const convId = Number(data.result?.data?.json?.conversationId ?? 0);
+        if (convId) setConversationId(convId);
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -366,6 +393,7 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
             ? 'مجھے آپ کا سوال پوری طرح سمجھ نہیں آیا۔ کیا آپ دوبارہ لکھ سکتے ہیں؟\n\nیا ہم سے رابطہ کریں:\n📱 WhatsApp: +9647819501604'
             : 'I didn\'t fully understand. Could you rephrase?\n\nOr contact us:\n📱 WhatsApp: +9647819501604'),
           timestamp: new Date(),
+          serverMessageId: data.result?.data?.json?.assistantMessageId,
           suggestions: langBucket === 'ar'
             ? ['التواصل معنا', 'الأقسام', 'المساعدة']
             : langBucket === 'ur'
@@ -564,59 +592,96 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
                   <ScrollArea className="h-full p-4">
                     <div ref={scrollRef} className="space-y-4">
                       {messages.map((message) => (
-                        <div key={message.id}>
-                          <div
-                            className={cn(
-                              "flex gap-3",
-                              message.role === 'user' ? "flex-row-reverse" : "flex-row"
-                            )}
-                          >
-                            {/* Avatar */}
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg",
-                              message.role === 'user' 
-                                ? "bg-gradient-to-br from-secondary to-primary" 
-                                : "bg-gradient-to-br from-accent to-secondary"
-                            )}>
-                              {message.role === 'user' 
-                                ? <span className="text-white text-sm font-bold">{user?.name?.[0] || '👤'}</span>
-                                : <Sparkles className="w-4 h-4 text-white" />
-                              }
-                            </div>
-                            
-                            {/* Message Bubble */}
-                            <div className={cn(
-                              "max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-lg",
-                              message.role === 'user'
-                                ? "bg-gradient-to-br from-secondary to-primary text-primary-foreground rounded-tr-sm"
-                                : "bg-muted text-foreground rounded-tl-sm border border-border"
-                            )}>
-                              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                              <p className={cn(
-                                "text-[10px] mt-2 opacity-60",
-                                message.role === 'user' ? "text-right text-primary-foreground/80" : "text-left text-muted-foreground"
-                              )}>
-                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Suggestions */}
-                          {message.role === 'assistant' && message.suggestions && message.suggestions.length > 0 && (
-                            <div className={cn("flex flex-wrap gap-2 mt-3", isArabic ? "mr-11" : "ml-11")}>
-                              {message.suggestions.map((suggestion, idx) => (
-                                <Button
-                                  key={idx}
-                                  variant="secondary"
-                                  size="sm"
-                                  className="text-xs h-7 rounded-full bg-card/60 border-border text-accent hover:bg-accent/10 hover:border-accent/40 transition-all"
-                                  onClick={() => handleSuggestionClick(suggestion)}
-                                >
-                                  {suggestion}
-                                </Button>
-                              ))}
+                        <div
+                          key={message.id}
+                          className={cn(
+                            "flex gap-3 mb-4",
+                            message.role === 'user' ? "justify-end" : "justify-start"
+                          )}
+                        >
+                          {message.role === 'assistant' && (
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-secondary flex items-center justify-center shadow-lg">
+                              <Sparkles className="w-4 h-4 text-white" />
                             </div>
                           )}
+
+                          <div className={cn("flex flex-col", message.role === 'user' ? "items-end" : "items-start", isArabic ? "text-right" : "text-left")}>
+                            <div
+                              className={cn(
+                                "rounded-2xl px-4 py-3 max-w-[85%] border",
+                                message.role === 'user'
+                                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent"
+                                  : "bg-slate-800/80 text-white border-slate-700"
+                              )}
+                            >
+                              <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+
+                              {message.role === 'assistant' && message.serverMessageId && conversationId && (
+                                <div className="mt-2 flex gap-2 justify-end">
+                                  <button
+                                    type="button"
+                                    className="text-xs text-white/50 hover:text-white transition-colors"
+                                    onClick={async () => {
+                                      const corrected =
+                                        window.prompt(
+                                          isArabic
+                                            ? 'اكتب التصحيح (اختياري):'
+                                            : langBucket === 'ur'
+                                            ? 'درست جواب (اختیاری):'
+                                            : 'Correction (optional):'
+                                        ) || undefined;
+                                      await sendFeedback({
+                                        conversationId,
+                                        messageId: message.serverMessageId,
+                                        rating: 'up',
+                                        correctedAnswer: corrected,
+                                      });
+                                    }}
+                                  >
+                                    👍
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="text-xs text-white/50 hover:text-white transition-colors"
+                                    onClick={async () => {
+                                      const corrected =
+                                        window.prompt(
+                                          isArabic
+                                            ? 'ما هو الرد الصحيح؟ (اختياري):'
+                                            : langBucket === 'ur'
+                                            ? 'صحیح جواب کیا ہے؟ (اختیاری):'
+                                            : 'What should the correct answer be? (optional):'
+                                        ) || undefined;
+                                      await sendFeedback({
+                                        conversationId,
+                                        messageId: message.serverMessageId,
+                                        rating: 'down',
+                                        correctedAnswer: corrected,
+                                      });
+                                    }}
+                                  >
+                                    👎
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {message.role === 'assistant' && message.suggestions && message.suggestions.length > 0 && (
+                              <div className={cn("flex flex-wrap gap-2 mt-3", isArabic ? "mr-11" : "ml-11")}>
+                                {message.suggestions.map((suggestion, idx) => (
+                                  <Button
+                                    key={idx}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="text-xs h-7 rounded-full bg-card/60 border-border text-accent hover:bg-accent/10 hover:border-accent/40 transition-all"
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                  >
+                                    {suggestion}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                       
