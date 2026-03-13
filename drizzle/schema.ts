@@ -479,6 +479,16 @@ export const aiModelVersions = pgTable("ai_model_versions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const aiRecommendationEvents = pgTable("ai_recommendation_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  productId: integer("product_id").notNull(),
+  eventType: varchar("event_type", { length: 24 }).notNull(),
+  modelVersion: varchar("model_version", { length: 64 }).notNull().default("heuristic-v1"),
+  context: text("context"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

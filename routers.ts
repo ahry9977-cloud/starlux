@@ -15,6 +15,8 @@ import {
   upsertAiUserProfile,
   getRecommendationsForUser,
   smartSearchProducts,
+  logRecommendationEvent,
+  getRecommendationMetrics,
   getPasswordResetByEmail,
   createPasswordReset,
   markPasswordResetAsUsed,
@@ -3212,6 +3214,60 @@ const aiRouter = router({
       if (!userId) return [] as any[];
       const limit = input?.limit ?? 12;
       return await getRecommendationsForUser(userId, limit);
+    }),
+
+  logRecommendationImpression: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number(),
+        modelVersion: z.string().max(64).optional(),
+        context: z.any().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await logRecommendationEvent({
+        userId: ctx.user?.id ?? null,
+        productId: input.productId,
+        eventType: "impression",
+        modelVersion: input.modelVersion ?? null,
+        context: input.context,
+      });
+      return { ok: true } as const;
+    }),
+
+  logRecommendationClick: protectedProcedure
+    .input(
+      z.object({
+        productId: z.number(),
+        modelVersion: z.string().max(64).optional(),
+        context: z.any().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await logRecommendationEvent({
+        userId: ctx.user?.id ?? null,
+        productId: input.productId,
+        eventType: "click",
+        modelVersion: input.modelVersion ?? null,
+        context: input.context,
+      });
+      return { ok: true } as const;
+    }),
+
+  getMetrics: adminProcedure
+    .input(
+      z
+        .object({
+          days: z.number().min(1).max(90).optional(),
+          modelVersion: z.string().max(64).optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      return await getRecommendationMetrics({
+        days: input?.days ?? 7,
+        modelVersion: input?.modelVersion,
+      });
     }),
 
   smartSearch: publicProcedure
