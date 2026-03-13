@@ -470,6 +470,15 @@ export const productVectors = pgTable("product_vectors", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const aiModelVersions = pgTable("ai_model_versions", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 80 }).notNull(),
+  version: varchar("version", { length: 64 }).notNull(),
+  artifact: text("artifact").notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

@@ -3234,6 +3234,56 @@ const aiRouter = router({
       }
       return results;
     }),
+
+  trainTfidf: adminProcedure
+    .input(
+      z
+        .object({
+          model: z.string().min(1).max(80).optional(),
+          maxFeatures: z.number().min(64).max(4096).optional(),
+          minDf: z.number().min(1).max(50).optional(),
+          maxDf: z.number().min(0.1).max(1).optional(),
+        })
+        .optional()
+    )
+    .mutation(async ({ input }) => {
+      const baseUrl = String(process.env.AI_SERVICE_URL ?? "").trim();
+      const secret = String(process.env.AI_SERVICE_SECRET ?? "").trim();
+
+      if (!baseUrl) {
+        throw new Error("AI_SERVICE_URL is not configured");
+      }
+      if (!secret) {
+        throw new Error("AI_SERVICE_SECRET is not configured");
+      }
+
+      const url = `${baseUrl.replace(/\/$/, "")}/train/tfidf`;
+      const body = {
+        model: input?.model ?? "tfidf-v1",
+        max_features: input?.maxFeatures ?? 512,
+        min_df: input?.minDf ?? 2,
+        max_df: input?.maxDf ?? 0.95,
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-ai-secret": secret,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`AI service error (${res.status}): ${text.slice(0, 500)}`);
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { ok: true, raw: text };
+      }
+    }),
 });
 
 export const appRouter = router({
