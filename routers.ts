@@ -53,6 +53,10 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000;
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 
+function normalizeEmail(input: unknown): string {
+  return String(input ?? "").toLowerCase().trim();
+}
+
 const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
   
@@ -86,7 +90,9 @@ const authRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const existingUser = await getUserByEmail(input.email);
+      const normalizedEmail = normalizeEmail(input.email);
+
+      const existingUser = await getUserByEmail(normalizedEmail);
       if (existingUser) {
         throw new Error("Email already registered");
       }
@@ -94,7 +100,7 @@ const authRouter = router({
       const passwordHash = await bcrypt.hash(input.password, 10);
 
       const userId = await createUser({
-        email: input.email,
+        email: normalizedEmail,
         passwordHash,
         name: input.name,
         role: "user",
@@ -103,9 +109,18 @@ const authRouter = router({
         failedLoginAttempts: 0,
       });
 
+      if (!userId || !Number.isFinite(Number(userId))) {
+        throw new Error("فشل إنشاء الحساب");
+      }
+
+      const savedUser = await getUserById(Number(userId));
+      if (!savedUser) {
+        throw new Error("فشل التحقق من الحساب");
+      }
+
       return {
         success: true,
-        userId,
+        userId: Number(userId),
         message: "Registration successful",
       };
     }),
@@ -355,7 +370,8 @@ const authRouter = router({
         .set({ isUsed: true })
         .where(eq(otpVerifications.id, record.id));
 
-      const user = await getUserByEmail(input.email);
+      const normalizedEmail = normalizeEmail(input.email);
+      const user = await getUserByEmail(normalizedEmail);
       if (!user) {
         throw new Error("الحساب غير موجود");
       }
@@ -380,8 +396,10 @@ const authRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const normalizedEmail = normalizeEmail(input.email);
+
       // Step 1: Validate Credentials - Fetch User from Database
-      const user = await getUserByEmail(input.email);
+      const user = await getUserByEmail(normalizedEmail);
       if (!user) {
         throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
       }
@@ -466,21 +484,23 @@ const authRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const { createAndSendOTP } = await import('./otpSystem');
+
+      const normalizedEmail = normalizeEmail(input.email);
       
       // جلب بيانات المستخدم
-      const user = await getUserByEmail(input.email);
+      const user = await getUserByEmail(normalizedEmail);
       
       // رسالة أمنية موحدة (لا تكشف وجود الحساب)
       const securityMessage = 'إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رمز التحقق';
       
       if (!user) {
-        console.log(`[Password Reset] Email not found: ${input.email}`);
+        console.log(`[Password Reset] Email not found: ${normalizedEmail}`);
         return { success: true, message: securityMessage };
       }
       
       // إنشاء وإرسال OTP فوراً
       const result = await createAndSendOTP({
-        email: input.email,
+        email: normalizedEmail,
         phoneNumber: user.phoneNumber || undefined,
         purpose: 'password_reset',
         userName: user.name || undefined,
@@ -507,15 +527,17 @@ const authRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { verifyOTP } = await import('./otpSystem');
+
+      const normalizedEmail = normalizeEmail(input.email);
       
-      const result = await verifyOTP(input.email, input.otp, 'password_reset');
+      const result = await verifyOTP(normalizedEmail, input.otp, 'password_reset');
       
       if (!result.success) {
         throw new Error(result.message);
       }
       
       // جلب بيانات المستخدم
-      const user = await getUserByEmail(input.email);
+      const user = await getUserByEmail(normalizedEmail);
       const resetToken = require('crypto').randomBytes(32).toString('hex');
       
       return {
@@ -614,8 +636,10 @@ const authRouter = router({
       const db = await getDb();
       if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
+      const normalizedEmail = normalizeEmail(input.email);
+
       // التحقق من عدم وجود البريد مسبقاً
-      const existingUser = await getUserByEmail(input.email);
+      const existingUser = await getUserByEmail(normalizedEmail);
       if (existingUser) {
         // إذا كان المستخدم بائعاً بالفعل، تحقق من وجود متجر
         if (existingUser.role === 'seller') {
@@ -631,7 +655,7 @@ const authRouter = router({
       // إنشاء حساب البائع
       const passwordHash = await bcrypt.hash(input.password, 10);
       const userId = await createUser({
-        email: input.email,
+        email: normalizedEmail,
         passwordHash,
         name: input.name,
         role: 'seller',
@@ -640,14 +664,21 @@ const authRouter = router({
         failedLoginAttempts: 0,
       });
 
-      if (!userId) {
+      if (!userId || !Number.isFinite(Number(userId))) {
         throw new Error("فشل إنشاء الحساب");
+      }
+
+      const userIdNum = Number(userId);
+
+      const savedUser = await getUserById(userIdNum);
+      if (!savedUser) {
+        throw new Error("فشل التحقق من الحساب");
       }
 
       // إنشاء المتجر تلقائياً
       const [storeResult] = await db.insert(stores).values({
         name: input.storeName,
-        sellerId: userId,
+        sellerId: userIdNum,
         category: input.storeCategory,
         description: `متجر ${input.storeName}`,
         subscriptionPlan: input.plan,
@@ -662,13 +693,13 @@ const authRouter = router({
       const price = planPrices[input.plan];
 
       // إنشاء سجل الاشتراك
-      const transactionId = `SUB_${Date.now()}_${userId}`;
+      const transactionId = `SUB_${Date.now()}_${userIdNum}`;
       const subscriptionStatus = input.plan === 'free' ? 'active' : 'pending_payment';
-      await db.execute(`INSERT INTO subscriptions (sellerId, storeId, plan, price, status, transactionId, startsAt, expiresAt) VALUES (${userId}, ${storeId}, '${input.plan}', ${price}, '${subscriptionStatus}', '${transactionId}', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR))`);
+      await db.execute(`INSERT INTO subscriptions (sellerId, storeId, plan, price, status, transactionId, startsAt, expiresAt) VALUES (${userIdNum}, ${storeId}, '${input.plan}', ${price}, '${subscriptionStatus}', '${transactionId}', NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR))`);
 
       return {
         success: true,
-        userId,
+        userId: userIdNum,
         storeId,
         plan: input.plan,
         requiresPayment: input.plan !== 'free',
@@ -692,8 +723,10 @@ const authRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const normalizedEmail = normalizeEmail(input.email);
+
       // Step 1: البحث عن المستخدم بالبريد الإلكتروني
-      let user = await getUserByEmail(input.email);
+      let user = await getUserByEmail(normalizedEmail);
 
       // Step 2: إذا لم يوجد المستخدم، إنشاء حساب جديد
       if (!user) {
@@ -702,7 +735,7 @@ const authRouter = router({
         const passwordHash = await bcrypt.hash(randomPassword, 10);
 
         const userId = await createUser({
-          email: input.email,
+          email: normalizedEmail,
           passwordHash,
           name: input.name,
           role: 'user', // الدور الافتراضي
@@ -712,11 +745,11 @@ const authRouter = router({
           profileImage: input.profileImage || null,
         });
 
-        if (!userId) {
+        if (!userId || !Number.isFinite(Number(userId))) {
           throw new Error("فشل إنشاء الحساب");
         }
 
-        user = await getUserById(userId);
+        user = await getUserById(Number(userId));
         if (!user) {
           throw new Error("فشل استرجاع بيانات الحساب");
         }
@@ -805,15 +838,17 @@ const authRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { createAndSendOTP } = await import('./otpSystem');
+
+      const normalizedEmail = normalizeEmail(input.email);
       
       // التحقق من عدم وجود البريد مسبقاً
-      const existingUser = await getUserByEmail(input.email);
+      const existingUser = await getUserByEmail(normalizedEmail);
       if (existingUser) {
         throw new Error('البريد الإلكتروني مسجل مسبقاً');
       }
       
       const result = await createAndSendOTP({
-        email: input.email,
+        email: normalizedEmail,
         phoneNumber: input.phoneNumber,
         purpose: 'registration',
         userName: input.name,
