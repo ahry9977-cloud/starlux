@@ -4,6 +4,57 @@ import { EnhancedMotionBackground } from '@/components/backgrounds/EnhancedMotio
 import { useStarLuxSound, useFormSound, useNavigationSound } from '@/hooks/useStarLuxSound';
 
 // Inline SVG Icons
+const MailIcon = memo(() => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
+  </svg>
+));
+
+const LockIcon = memo(() => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+));
+
+const EyeIcon = memo(() => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+));
+
+const EyeOffIcon = memo(() => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+));
+
+const GoogleIcon = memo(() => (
+  <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#EA4335" d="M24 9.5c3.2 0 5.9 1.1 8.1 3.1l6-6C34.5 2.9 29.7 1 24 1 14.6 1 6.4 6.4 2.6 14.2l7 5.4C11.5 13.6 17.2 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.1 24.6c0-1.7-.2-3.3-.5-4.9H24v9.3h12.4c-.5 2.6-2 4.8-4.2 6.3l6.5 5c3.8-3.5 6.4-8.6 6.4-15.7z"/>
+    <path fill="#FBBC05" d="M9.6 28.6c-.6-1.7-1-3.5-1-5.4s.4-3.7 1-5.4l-7-5.4C1 15.7 0 19.7 0 23.2s1 7.5 2.6 10.8l7-5.4z"/>
+    <path fill="#34A853" d="M24 46.4c5.7 0 10.5-1.9 14-5.1l-6.5-5c-1.8 1.2-4.2 2-7.5 2-6.8 0-12.5-4.1-14.4-10l-7 5.4C6.4 41.6 14.6 46.4 24 46.4z"/>
+    <path fill="none" d="M0 0h48v48H0z"/>
+  </svg>
+));
+
+const AppleIcon = memo(() => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M16.365 1.43c0 1.14-.43 2.2-1.19 3.03-.82.9-2.16 1.6-3.32 1.51-.14-1.1.41-2.25 1.14-3.05.81-.9 2.25-1.56 3.37-1.49z" />
+    <path d="M20.64 17.02c-.62 1.43-.91 2.06-1.71 3.33-1.12 1.74-2.7 3.9-4.66 3.92-1.74.02-2.19-1.14-4.56-1.12-2.37.01-2.86 1.14-4.6 1.12-1.96-.02-3.46-1.96-4.58-3.7C.43 18.5 0 16.6 0 14.78c0-3.43 2.22-5.25 4.4-5.25 1.74 0 2.84 1.15 4.28 1.15 1.4 0 2.25-1.15 4.27-1.15 1.95 0 4.01 1.06 4.89 2.9-3.82 2.09-3.2 7.51.8 9.59z" />
+  </svg>
+));
+
+const FacebookIcon = memo(() => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M24 12a12 12 0 1 0-13.88 11.86v-8.39H7.08V12h3.04V9.36c0-3 1.79-4.66 4.53-4.66 1.31 0 2.68.24 2.68.24v2.95h-1.51c-1.49 0-1.95.92-1.95 1.87V12h3.32l-.53 3.47h-2.79v8.39A12 12 0 0 0 24 12z" />
+  </svg>
+));
+
 const UserIcon = memo(() => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -77,6 +128,8 @@ const PremiumRegister: React.FC = () => {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(0);
   const [accountType, setAccountType] = useState<AccountType>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [ripple, setRipple] = useState<{ x: number; y: number; key: number } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -107,6 +160,13 @@ const PremiumRegister: React.FC = () => {
     playSuccessSound();
     setLocation('/welcome?type=' + accountType);
   }, [accountType, setLocation, playSuccessSound]);
+
+  const onRipple = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setRipple({ x, y, key: Date.now() });
+  }, []);
 
   const renderAccountTypeStep = () => (
     <div className="text-center">
@@ -195,6 +255,48 @@ const PremiumRegister: React.FC = () => {
           )}
         </button>
       </div>
+
+      <div className="flex items-center gap-3" style={{ marginTop: '4px', marginBottom: '14px' }}>
+        <div className="h-px flex-1 bg-white/10" />
+        <div className="text-[11px] text-white/40">or sign up with</div>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3" style={{ marginBottom: '8px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            window.location.href = '/api/oauth/login';
+          }}
+          className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
+          aria-label="Sign up with Google"
+        >
+          <GoogleIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            window.location.href = '/api/oauth/login';
+          }}
+          className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-white"
+          aria-label="Sign up with Apple"
+        >
+          <AppleIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            window.location.href = '/api/oauth/login';
+          }}
+          className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-[#1877F2]"
+          aria-label="Sign up with Facebook"
+        >
+          <FacebookIcon />
+        </button>
+      </div>
     </div>
   );
 
@@ -222,14 +324,20 @@ const PremiumRegister: React.FC = () => {
           >
             الاسم الكامل
           </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="أدخل اسمك الكامل"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-            style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
-          />
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/45">
+              <UserIcon />
+            </div>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="أدخل اسمك الكامل"
+              className="slx-input w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/35 transition-all duration-300"
+              style={{ height: '52px', padding: '0 16px 0 56px', fontSize: '16px' }}
+              autoComplete="name"
+            />
+          </div>
         </div>
 
         {/* Email Field */}
@@ -240,14 +348,21 @@ const PremiumRegister: React.FC = () => {
           >
             البريد الإلكتروني
           </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="أدخل بريدك الإلكتروني"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-            style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
-          />
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/45">
+              <MailIcon />
+            </div>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="you@example.com"
+              className="slx-input w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/35 transition-all duration-300"
+              style={{ height: '52px', padding: '0 16px 0 48px', fontSize: '16px' }}
+              autoComplete="email"
+              inputMode="email"
+            />
+          </div>
         </div>
 
         {/* Password Field */}
@@ -258,14 +373,28 @@ const PremiumRegister: React.FC = () => {
           >
             كلمة المرور
           </label>
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder="أدخل كلمة المرور"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-            style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
-          />
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/45">
+              <LockIcon />
+            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="أدخل كلمة المرور"
+              className="slx-input w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/35 transition-all duration-300"
+              style={{ height: '52px', padding: '0 48px 0 48px', fontSize: '16px' }}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/45 hover:text-white transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
         </div>
 
         {/* Confirm Password Field */}
@@ -276,14 +405,20 @@ const PremiumRegister: React.FC = () => {
           >
             تأكيد كلمة المرور
           </label>
-          <input
-            type="password"
-            value={formData.confirmPassword}
-            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-            placeholder="أعد إدخال كلمة المرور"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
-            style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
-          />
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/45">
+              <LockIcon />
+            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              placeholder="أعد إدخال كلمة المرور"
+              className="slx-input w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/35 transition-all duration-300"
+              style={{ height: '52px', padding: '0 16px 0 48px', fontSize: '16px' }}
+              autoComplete="new-password"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -335,54 +470,85 @@ const PremiumRegister: React.FC = () => {
         parallax={true}
       />
 
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes slxFloatA { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(18px,-22px,0) scale(1.03); } }
+          @keyframes slxFloatB { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-14px,18px,0) scale(1.04); } }
+          @keyframes slxCardIn { from { opacity: 0; transform: translate3d(0,12px,0) scale(.98); } to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
+          @keyframes slxGlowPulse { 0%,100% { opacity: .55; } 50% { opacity: .85; } }
+          @keyframes slxRipple { from { transform: translate(-50%,-50%) scale(.2); opacity: .45; } to { transform: translate(-50%,-50%) scale(2.6); opacity: 0; } }
+          .slx-auth-card { animation: slxCardIn 520ms cubic-bezier(.2,.9,.2,1) both; }
+          .slx-glow-a { animation: slxFloatA 10s ease-in-out infinite; }
+          .slx-glow-b { animation: slxFloatB 12s ease-in-out infinite; }
+          .slx-glow-pulse { animation: slxGlowPulse 6s ease-in-out infinite; }
+          .slx-input { outline: none; }
+          .slx-input:focus { box-shadow: 0 0 0 4px rgba(168,85,247,.18), 0 0 30px rgba(168,85,247,.10); border-color: rgba(168,85,247,.8); }
+          .slx-soft-border { background: linear-gradient(135deg, rgba(168,85,247,.55), rgba(236,72,153,.45), rgba(34,211,238,.25)); padding: 1px; border-radius: 28px; }
+          .slx-ripple { position: absolute; width: 240px; height: 240px; border-radius: 999px; background: rgba(255,255,255,.65); pointer-events: none; animation: slxRipple 650ms ease-out forwards; }
+        `,
+        }}
+      />
+
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full blur-3xl opacity-70 slx-glow-a"
+          style={{ background: 'radial-gradient(circle at 30% 30%, rgba(168,85,247,.45), transparent 55%)' }}
+        />
+        <div className="absolute -bottom-28 -left-24 w-[560px] h-[560px] rounded-full blur-3xl opacity-70 slx-glow-b"
+          style={{ background: 'radial-gradient(circle at 30% 30%, rgba(34,211,238,.35), transparent 60%)' }}
+        />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[620px] h-[360px] rounded-full blur-3xl slx-glow-pulse"
+          style={{ background: 'radial-gradient(circle at 50% 50%, rgba(236,72,153,.25), transparent 60%)' }}
+        />
+      </div>
+
       {/* Content Layer */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
-        {/* Register Card */}
-        <div 
-          className="w-full max-w-[420px]"
-          style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '12px',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 100px rgba(139, 92, 246, 0.1)',
-            padding: '32px',
-          }}
-        >
-          {/* Back Button */}
-          <Link href="/">
-            <button
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-300"
-              style={{ marginBottom: '32px' }}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-10 sm:px-8">
+        <div className="w-full max-w-[460px]">
+          <div className="slx-soft-border">
+            <div
+              className="slx-auth-card"
+              style={{
+                background: 'rgba(2, 6, 23, 0.72)',
+                backdropFilter: 'blur(22px)',
+                borderRadius: '28px',
+                boxShadow: '0 26px 60px rgba(0,0,0,.55), 0 0 140px rgba(168,85,247,.12)',
+                padding: '28px',
+              }}
             >
-              <ArrowLeftIcon />
-              <span>العودة للرئيسية</span>
-            </button>
-          </Link>
+              <div className="flex items-center justify-between" style={{ marginBottom: '22px' }}>
+                <Link href="/">
+                  <button
+                    className="flex items-center gap-2 text-white/60 hover:text-white transition-colors duration-300"
+                    onClick={() => playClickSound()}
+                  >
+                    <ArrowLeftIcon />
+                    <span className="text-sm">العودة للرئيسية</span>
+                  </button>
+                </Link>
+                <div className="text-white/50 text-xs">STAR LUX</div>
+              </div>
 
-          {/* Logo */}
-          <div className="text-center" style={{ marginBottom: '32px' }}>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              STAR LUX
-            </h1>
-          </div>
+              <div className="text-center" style={{ marginBottom: '20px' }}>
+                <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-200 bg-clip-text text-transparent" style={{ letterSpacing: '-0.02em' }}>
+                  STAR LUX
+                </h1>
+                <p className="text-white/55 text-sm" style={{ marginTop: '6px' }}>Create your account</p>
+              </div>
 
-          {/* Step Indicator */}
-          <StepIndicator currentStep={step} totalSteps={totalSteps} />
+              <StepIndicator currentStep={step} totalSteps={totalSteps} />
 
-          {/* Current Step Content */}
-          {renderCurrentStep()}
+              {renderCurrentStep()}
 
-          {/* Navigation Buttons */}
-          <div 
-            className="flex justify-between items-center"
-            style={{ marginTop: '48px', gap: '24px' }}
-          >
+              <div 
+                className="flex justify-between items-center"
+                style={{ marginTop: '32px', gap: '16px' }}
+              >
             {step > 0 && step < totalSteps - 1 && (
               <button
                 onClick={handleBack}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                style={{ padding: '16px 24px' }}
+                className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+                style={{ padding: '10px 10px' }}
               >
                 <ArrowRightIcon />
                 <span>السابق</span>
@@ -393,9 +559,13 @@ const PremiumRegister: React.FC = () => {
               <button
                 onClick={handleNext}
                 disabled={!accountType}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-                style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
+                onMouseDown={(e) => onRipple(e as any)}
+                className="relative overflow-hidden flex-1 text-white font-bold rounded-2xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                style={{ height: '54px', padding: '0 16px', fontSize: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,1), rgba(236,72,153,1), rgba(34,211,238,.9))', boxShadow: '0 18px 45px rgba(168,85,247,.22)' }}
               >
+                {ripple && (
+                  <span key={ripple.key} className="slx-ripple" style={{ left: ripple.x, top: ripple.y }} />
+                )}
                 <span>التالي</span>
                 <ArrowLeftIcon />
               </button>
@@ -404,9 +574,13 @@ const PremiumRegister: React.FC = () => {
             {step === 1 && (
               <button
                 onClick={handleNext}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
+                onMouseDown={(e) => onRipple(e as any)}
+                className="relative overflow-hidden flex-1 text-white font-bold rounded-2xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                style={{ height: '54px', padding: '0 16px', fontSize: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,1), rgba(236,72,153,1), rgba(34,211,238,.9))', boxShadow: '0 18px 45px rgba(168,85,247,.22)' }}
               >
+                {ripple && (
+                  <span key={ripple.key} className="slx-ripple" style={{ left: ripple.x, top: ripple.y }} />
+                )}
                 <span>إنشاء الحساب</span>
                 <ArrowLeftIcon />
               </button>
@@ -415,29 +589,38 @@ const PremiumRegister: React.FC = () => {
             {step === totalSteps - 1 && (
               <button
                 onClick={handleComplete}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                style={{ height: '48px', padding: '0 16px', fontSize: '16px' }}
+                onMouseDown={(e) => onRipple(e as any)}
+                className="relative overflow-hidden flex-1 text-white font-bold rounded-2xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                style={{ height: '54px', padding: '0 16px', fontSize: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,1), rgba(236,72,153,1), rgba(34,211,238,.9))', boxShadow: '0 18px 45px rgba(168,85,247,.22)' }}
               >
+                {ripple && (
+                  <span key={ripple.key} className="slx-ripple" style={{ left: ripple.x, top: ripple.y }} />
+                )}
                 <span>ابدأ الآن</span>
                 <ArrowLeftIcon />
               </button>
             )}
-          </div>
+              </div>
 
-          {/* Login Link */}
-          {step === 0 && (
-            <div 
-              className="text-center text-gray-400"
-              style={{ marginTop: '32px' }}
-            >
-              لديك حساب بالفعل؟{' '}
-              <Link href="/auth">
-                <span className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer font-medium">
-                  تسجيل الدخول
-                </span>
-              </Link>
+              {step === 0 && (
+                <div className="text-center text-white/55" style={{ marginTop: '22px' }}>
+                  لديك حساب بالفعل؟{' '}
+                  <Link href="/auth">
+                    <span className="text-cyan-200/80 hover:text-cyan-200 transition-colors cursor-pointer font-medium">
+                      تسجيل الدخول
+                    </span>
+                  </Link>
+                </div>
+              )}
+
+              <p className="text-center text-[11px] text-white/35 mt-6">
+                By continuing, you agree to our{' '}
+                <a href="/terms" className="text-white/55 hover:text-white transition-colors">Terms</a>
+                {' '}and{' '}
+                <a href="/privacy" className="text-white/55 hover:text-white transition-colors">Privacy Policy</a>
+              </p>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -52,11 +52,38 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/trpc`,
       transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
+      async fetch(input, init) {
+        const res = await globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
         });
+
+        try {
+          const cloned = res.clone();
+          const text = await cloned.text();
+          const contentType = res.headers.get("content-type") ?? "";
+          const isJson = contentType.toLowerCase().includes("application/json");
+
+          if (!text.trim() || !isJson) {
+            const fallback = {
+              error: {
+                message: !text.trim()
+                  ? "Empty response from API (possible proxy/server issue)"
+                  : `Non-JSON response from API (content-type: ${contentType || "unknown"})`,
+              },
+            };
+            return new Response(JSON.stringify(fallback), {
+              status: 502,
+              headers: {
+                "content-type": "application/json",
+              },
+            });
+          }
+        } catch {
+          // If we cannot read/clone the body, just return the original response.
+        }
+
+        return res;
       },
     }),
   ],
