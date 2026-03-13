@@ -6,7 +6,7 @@ import { AppNavbar } from "@/components/AppNavbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { Search, ShoppingCart } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -51,7 +51,7 @@ function safeParseImages(images: unknown): string[] {
 }
 
 export default function Explore(): React.JSX.Element {
-  const { language, direction } = useLanguage();
+  const { language, direction, t } = useLanguage();
   const [location, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
 
@@ -66,6 +66,16 @@ export default function Explore(): React.JSX.Element {
   }, [location]);
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    const w = window as any;
+    const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    setVoiceSupported(Boolean(SpeechRecognition));
+  }, []);
 
   const [aiResults, setAiResults] = useState<any[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -115,6 +125,59 @@ export default function Explore(): React.JSX.Element {
       navigate(`/explore`);
     }
   };
+
+  const stopVoice = useCallback(() => {
+    try {
+      const rec = recognitionRef.current;
+      if (rec) rec.stop?.();
+    } catch {
+      // ignore
+    } finally {
+      setListening(false);
+      recognitionRef.current = null;
+    }
+  }, []);
+
+  const startVoice = useCallback(() => {
+    const w = window as any;
+    const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (listening) {
+      stopVoice();
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    recognitionRef.current = rec;
+    rec.lang = language;
+    rec.interimResults = true;
+    rec.continuous = false;
+
+    rec.onresult = (event: any) => {
+      const result = event?.results?.[0];
+      const transcript = String(result?.[0]?.transcript ?? "").trim();
+      if (!transcript) return;
+      setSearchQuery(transcript);
+      const isFinal = Boolean(result?.isFinal);
+      if (isFinal) {
+        saveRecentSearch(transcript);
+        setRecentSearches(loadRecentSearches());
+        navigate(`/explore?search=${encodeURIComponent(transcript)}`);
+      }
+    };
+
+    rec.onerror = () => {
+      stopVoice();
+    };
+
+    rec.onend = () => {
+      stopVoice();
+    };
+
+    setListening(true);
+    rec.start();
+  }, [language, listening, navigate, stopVoice]);
 
   React.useEffect(() => {
     const q = searchQuery.trim();
@@ -201,8 +264,8 @@ export default function Explore(): React.JSX.Element {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold">{language === "ar-IQ" ? "استكشف المنتجات" : "Explore Products"}</h1>
-            <p className="text-muted-foreground">{language === "ar-IQ" ? "ابحث وتصفح أحدث المنتجات" : "Search and browse the latest products"}</p>
+            <h1 className="text-2xl font-bold">{t("explore.title")}</h1>
+            <p className="text-muted-foreground">{t("explore.subtitle")}</p>
           </div>
 
           <form onSubmit={handleSearch} className="w-full md:max-w-lg">
@@ -211,12 +274,25 @@ export default function Explore(): React.JSX.Element {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={language === "ar-IQ" ? "ابحث عن منتج..." : "Search for a product..."}
-                className="pl-10 pr-24"
+                placeholder={t("explore.searchPlaceholder")}
+                className="pl-10 pr-36"
               />
               <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2">
-                {language === "ar-IQ" ? "بحث" : "Search"}
+                {t("explore.searchButton")}
               </Button>
+
+              {voiceSupported && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={listening ? "destructive" : "outline"}
+                  className="absolute right-[72px] top-1/2 -translate-y-1/2"
+                  onClick={startVoice}
+                  title={listening ? "Stop" : "Voice search"}
+                >
+                  {listening ? "■" : "🎤"}
+                </Button>
+              )}
 
               {suggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-20">
@@ -238,7 +314,7 @@ export default function Explore(): React.JSX.Element {
                   ))}
                   {suggestLoading && (
                     <div className="px-4 py-2 text-xs text-muted-foreground">
-                      {language === "ar-IQ" ? "جاري الاقتراح..." : "Suggesting..."}
+                      {t("explore.suggesting")}
                     </div>
                   )}
                 </div>
@@ -273,7 +349,7 @@ export default function Explore(): React.JSX.Element {
           <div className="mb-6">
             <div className="bg-muted/40 border border-border rounded-xl px-4 py-3 flex items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground">
-                {language === "ar-IQ" ? "ربما تقصد:" : "Did you mean:"} <span className="text-foreground font-medium">{didYouMean}</span>
+                {t("explore.didYouMean")} <span className="text-foreground font-medium">{didYouMean}</span>
               </div>
               <Button
                 size="sm"
@@ -285,14 +361,14 @@ export default function Explore(): React.JSX.Element {
                   navigate(`/explore?search=${encodeURIComponent(didYouMean)}`);
                 }}
               >
-                {language === "ar-IQ" ? "بحث" : "Search"}
+                {t("explore.searchButton")}
               </Button>
             </div>
           </div>
         )}
 
         {isLoading || aiLoading || dbSearchLoading ? (
-          <div className="py-12 text-center text-muted-foreground">{language === "ar-IQ" ? "جاري التحميل..." : "Loading..."}</div>
+          <div className="py-12 text-center text-muted-foreground">{t("common.loading")}</div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -329,7 +405,7 @@ export default function Explore(): React.JSX.Element {
 
             {products.length === 0 && (
               <div className="py-16 text-center">
-                <p className="text-muted-foreground">{language === "ar-IQ" ? "لا توجد منتجات مطابقة" : "No matching products"}</p>
+                <p className="text-muted-foreground">{t("explore.noProducts")}</p>
               </div>
             )}
 
@@ -338,14 +414,14 @@ export default function Explore(): React.JSX.Element {
                 <div className="flex items-end justify-between gap-4 mb-4">
                   <div>
                     <h2 className="text-lg font-semibold">
-                      {language === "ar-IQ" ? "منتجات مقترحة" : "Recommended Products"}
+                      {t("explore.recommendedTitle")}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      {language === "ar-IQ" ? "قد تعجبك هذه المنتجات" : "You might like these"}
+                      {t("explore.recommendedSubtitle")}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => navigate("/explore")}>
-                    {language === "ar-IQ" ? "عرض المزيد" : "See more"}
+                    {t("explore.seeMore")}
                   </Button>
                 </div>
 

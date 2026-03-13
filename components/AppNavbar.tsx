@@ -28,7 +28,7 @@ export function AppNavbar({
 }): React.JSX.Element {
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { theme, toggleTheme, switchable } = useTheme();
 
   const { data: categoriesData } = trpc.products.getCategoriesHierarchy.useQuery();
@@ -66,14 +66,14 @@ export function AppNavbar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
-                  {language === "ar-IQ" ? "الأقسام" : "Categories"}
+                  {t("nav.categories")}
                   <ChevronDown className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64 max-h-[60vh] overflow-auto">
                 {categories.length === 0 ? (
                   <DropdownMenuItem className="justify-start">
-                    {language === "ar-IQ" ? "لا توجد أقسام" : "No categories"}
+                    {t("nav.noCategories")}
                   </DropdownMenuItem>
                 ) : (
                   categories.slice(0, 30).map((c: any) => (
@@ -94,7 +94,7 @@ export function AppNavbar({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder={language === "ar-IQ" ? "ابحث عن منتجات..." : "Search products..."}
+                  placeholder={t("nav.searchProducts")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 bg-background/40"
@@ -110,7 +110,7 @@ export function AppNavbar({
               className="h-10 w-10"
               onClick={() => navigate("/cart")}
               aria-label="Cart"
-              title={language === "ar-IQ" ? "السلة" : "Cart"}
+              title={t("nav.cart")}
             >
               <ShoppingCart className="w-5 h-5" />
             </Button>
@@ -121,7 +121,7 @@ export function AppNavbar({
               className="h-10 w-10 hidden sm:inline-flex"
               onClick={goProfile}
               aria-label="Profile"
-              title={language === "ar-IQ" ? "الحساب" : "Profile"}
+              title={t("nav.profile")}
             >
               <User className="w-5 h-5" />
             </Button>
@@ -151,35 +151,35 @@ export function AppNavbar({
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuItem className="justify-start" onClick={() => navigate("/")}
                     >
-                    {language === "ar-IQ" ? "الرئيسية" : "Home"}
+                    {t("nav.home")}
                   </DropdownMenuItem>
                   <DropdownMenuItem className="justify-start" onClick={() => navigate("/explore")}
                     >
-                    {language === "ar-IQ" ? "استكشف المنتجات" : "Explore"}
+                    {t("nav.explore")}
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
 
                   <DropdownMenuItem className="justify-start" onClick={() => navigate("/cart")}
                     >
-                    {language === "ar-IQ" ? "السلة" : "Cart"}
+                    {t("nav.cart")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem className="justify-start" onClick={goProfile}
                     >
                     {isAuthenticated
-                      ? language === "ar-IQ" ? "حسابي" : "My Account"
-                      : language === "ar-IQ" ? "تسجيل الدخول" : "Sign In"}
+                      ? t("nav.myAccount")
+                      : t("nav.signIn")}
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
 
                   <DropdownMenuLabel>
-                    {language === "ar-IQ" ? "الأقسام" : "Categories"}
+                    {t("nav.categories")}
                   </DropdownMenuLabel>
                   {categories.length === 0 ? (
                     <DropdownMenuItem className="justify-start">
-                      {language === "ar-IQ" ? "لا توجد أقسام" : "No categories"}
+                      {t("nav.noCategories")}
                     </DropdownMenuItem>
                   ) : (
                     categories.slice(0, 12).map((c: any) => (

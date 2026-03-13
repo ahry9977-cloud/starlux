@@ -269,21 +269,19 @@ export default function Home() {
           <Card className="border-border/50 bg-card/60">
             <CardHeader>
               <CardTitle className="text-xl md:text-2xl">
-                {language === "ar-IQ" ? "حمّل تطبيق STAR LUX" : "Download STAR LUX App"}
+                {t("home.downloadAppTitle")}
               </CardTitle>
               <CardDescription>
-                {language === "ar-IQ"
-                  ? "التطبيق قريباً على Google Play و App Store"
-                  : "Coming soon on Google Play and the App Store"}
+                {t("home.downloadAppSubtitle")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
                 <Button variant="outline" disabled>
-                  {language === "ar-IQ" ? "Android (قريباً)" : "Android (Soon)"}
+                  {t("home.androidSoon")}
                 </Button>
                 <Button variant="outline" disabled>
-                  {language === "ar-IQ" ? "iPhone (قريباً)" : "iPhone (Soon)"}
+                  {t("home.iphoneSoon")}
                 </Button>
               </div>
             </CardContent>
@@ -294,10 +292,10 @@ export default function Home() {
         <section className="container mx-auto px-4 section-lg">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">
-              {language === "ar-IQ" ? "أحدث المنتجات" : "Latest Products"}
+              {t("home.latestProductsTitle")}
             </h2>
             <Button variant="outline" onClick={() => navigate("/explore")}>
-              {language === "ar-IQ" ? "عرض الكل" : "View All"}
+              {t("home.viewAll")}
             </Button>
           </div>
 
@@ -318,7 +316,7 @@ export default function Home() {
 
           {isAuthenticated && recommendedProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "مقترح لك" : "Recommended for you"}</h2>
+              <h2 className="text-2xl font-bold mb-6">{t("home.recommendedForYou")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {recommendedProducts.slice(0, 8).map((product: any) => (
                   <ProductCard
@@ -336,7 +334,7 @@ export default function Home() {
 
           {trendingProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر رواجاً" : "Trending products"}</h2>
+              <h2 className="text-2xl font-bold mb-6">{t("home.trendingProducts")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {trendingProducts.slice(0, 8).map((product: any) => (
                   <ProductCard
@@ -354,7 +352,7 @@ export default function Home() {
 
           {topSharedProducts.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-2xl font-bold mb-6">{language === "ar-IQ" ? "الأكثر مشاركة" : "Most shared"}</h2>
+              <h2 className="text-2xl font-bold mb-6">{t("home.mostShared")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {topSharedProducts.slice(0, 8).map((product: any) => (
                   <ProductCard
@@ -372,7 +370,7 @@ export default function Home() {
 
           {homeProducts.length === 0 && (
             <div className="py-12 text-center text-muted-foreground">
-              {language === "ar-IQ" ? "لا توجد منتجات حالياً" : "No products yet"}
+              {t("home.noProductsYet")}
             </div>
           )}
         </section>
@@ -381,7 +379,7 @@ export default function Home() {
         <section className="bg-card/30 section-lg border-y border-border">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
-              {language === 'ar-IQ' ? 'تصفح الأقسام' : 'Browse Categories'}
+              {t("home.browseCategories")}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -404,7 +402,7 @@ export default function Home() {
                             {language === 'ar-IQ' ? category.nameAr : category.nameEn}
                           </CardTitle>
                           <CardDescription className="text-xs">
-                            {(category as any).subcategories?.length || 0} {language === 'ar-IQ' ? 'قسم فرعي' : 'subcategories'}
+                            {(category as any).subcategories?.length || 0} {t("home.subcategories")}
                           </CardDescription>
                         </div>
                       </div>
