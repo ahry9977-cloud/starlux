@@ -4,7 +4,7 @@
 nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake", "pkg-config"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --include=dev"]
 
 [phases.build]
 cmds = ["rm -rf node_modules/.vite || true", "npm run build:prod"]
