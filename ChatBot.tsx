@@ -193,7 +193,9 @@ export default function ChatBot() {
   const { language } = useLanguage();
   const { user } = useAuth();
   
-  const isArabic = language === 'ar-IQ';
+  const langBase = String(language ?? '').split('-')[0]?.toLowerCase();
+  const langBucket: 'ar' | 'ur' | 'en' = langBase === 'ar' ? 'ar' : langBase === 'ur' ? 'ur' : 'en';
+  const isArabic = langBucket === 'ar';
   
   // تحديد دور المستخدم
   const userRole: UserRole = user?.role === 'admin' ? 'admin' 
@@ -209,17 +211,37 @@ export default function ChatBot() {
         role: 'assistant',
         content: getRoleBasedGreeting(userRole, isArabic),
         timestamp: new Date(),
-        suggestions: userRole === 'guest' 
-          ? ['كيف أسجل؟', 'الأقسام', 'طرق الدفع']
-          : userRole === 'seller'
-          ? ['إضافة منتج', 'تقارير المبيعات', 'إعدادات المتجر']
-          : userRole === 'admin'
-          ? ['إدارة المستخدمين', 'التقارير', 'الإعدادات']
-          : ['طلباتي', 'البحث عن منتج', 'المساعدة'],
+        suggestions: (() => {
+          const s = userRole === 'guest' 
+            ? ['كيف أسجل؟', 'الأقسام', 'طرق الدفع']
+            : userRole === 'seller'
+            ? ['إضافة منتج', 'تقارير المبيعات', 'إعدادات المتجر']
+            : userRole === 'admin'
+            ? ['إدارة المستخدمين', 'التقارير', 'الإعدادات']
+            : ['طلباتي', 'البحث عن منتج', 'المساعدة'];
+
+          if (langBucket === 'ar') return s;
+          if (langBucket === 'ur') {
+            return userRole === 'guest'
+              ? ['رجسٹر کیسے کروں؟', 'زمرے', 'ادائیگی کے طریقے']
+              : userRole === 'seller'
+              ? ['پروڈکٹ شامل کریں', 'سیلز رپورٹس', 'اسٹور سیٹنگز']
+              : userRole === 'admin'
+              ? ['یوزر مینجمنٹ', 'رپورٹس', 'سیٹنگز']
+              : ['میرے آرڈرز', 'پروڈکٹ تلاش', 'مدد'];
+          }
+          return userRole === 'guest'
+            ? ['How do I register?', 'Categories', 'Payment methods']
+            : userRole === 'seller'
+            ? ['Add a product', 'Sales reports', 'Store settings']
+            : userRole === 'admin'
+            ? ['User management', 'Reports', 'Settings']
+            : ['My orders', 'Search for a product', 'Help'];
+        })(),
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, isArabic, userRole]);
+  }, [isOpen, isArabic, userRole, langBucket]);
   
   // التمرير للأسفل
   useEffect(() => {
@@ -326,7 +348,7 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
         body: JSON.stringify({
           json: {
             message: currentInput,
-            language: isArabic ? 'ar' : 'en',
+            language: language,
             context: context.lastQuestions.join('\n'),
             userRole,
           }
@@ -338,11 +360,17 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.result?.data?.json?.response || (isArabic 
+          content: data.result?.data?.json?.response || (langBucket === 'ar'
             ? '🤔 لم أفهم سؤالك بشكل كامل. هل يمكنك إعادة صياغته؟\n\nأو تواصل معنا مباشرة:\n📱 WhatsApp: +9647819501604'
+            : langBucket === 'ur'
+            ? 'مجھے آپ کا سوال پوری طرح سمجھ نہیں آیا۔ کیا آپ دوبارہ لکھ سکتے ہیں؟\n\nیا ہم سے رابطہ کریں:\n📱 WhatsApp: +9647819501604'
             : 'I didn\'t fully understand. Could you rephrase?\n\nOr contact us:\n📱 WhatsApp: +9647819501604'),
           timestamp: new Date(),
-          suggestions: ['التواصل معنا', 'الأقسام', 'المساعدة'],
+          suggestions: langBucket === 'ar'
+            ? ['التواصل معنا', 'الأقسام', 'المساعدة']
+            : langBucket === 'ur'
+            ? ['رابطہ کریں', 'زمرے', 'مدد']
+            : ['Contact', 'Categories', 'Help'],
         };
         setMessages(prev => [...prev, assistantMessage]);
       } else {
@@ -353,17 +381,23 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: isArabic 
+        content: langBucket === 'ar'
           ? '💡 شكراً لسؤالك!\n\nللحصول على مساعدة أسرع، تواصل معنا:\n📱 WhatsApp: +9647819501604\n✈️ Telegram: @T54_5\n\nأو جرب أحد الأسئلة الشائعة أدناه 👇'
+          : langBucket === 'ur'
+          ? '💡 آپ کے سوال کا شکریہ!\n\nتیز مدد کے لیے رابطہ کریں:\n📱 WhatsApp: +9647819501604\n✈️ Telegram: @T54_5'
           : '💡 Thanks for your question!\n\nFor faster help, contact us:\n📱 WhatsApp: +9647819501604\n✈️ Telegram: @T54_5',
         timestamp: new Date(),
-        suggestions: ['كيف أشتري؟', 'الأقسام', 'طرق الدفع'],
+        suggestions: langBucket === 'ar'
+          ? ['كيف أشتري؟', 'الأقسام', 'طرق الدفع']
+          : langBucket === 'ur'
+          ? ['میں کیسے خریدوں؟', 'زمرے', 'ادائیگی کے طریقے']
+          : ['How do I buy?', 'Categories', 'Payment methods'],
       };
       setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, isArabic, userRole, context, user]);
+  }, [input, isLoading, isArabic, userRole, context, user, language, langBucket]);
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -378,13 +412,34 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
   };
   
   // الاقتراحات السريعة الأولية
-  const initialSuggestions = userRole === 'guest' 
-    ? ['كيف أسجل؟', 'الأقسام', 'طرق الدفع', 'التواصل']
-    : userRole === 'seller'
-    ? ['إضافة منتج', 'طلبات جديدة', 'تقارير', 'الأرباح']
-    : userRole === 'admin'
-    ? ['المستخدمين', 'المتاجر', 'التقارير', 'الإعدادات']
-    : ['طلباتي', 'البحث', 'السلة', 'المساعدة'];
+  const initialSuggestions = (() => {
+    const s = userRole === 'guest' 
+      ? ['كيف أسجل؟', 'الأقسام', 'طرق الدفع', 'التواصل']
+      : userRole === 'seller'
+      ? ['إضافة منتج', 'طلبات جديدة', 'تقارير', 'الأرباح']
+      : userRole === 'admin'
+      ? ['المستخدمين', 'المتاجر', 'التقارير', 'الإعدادات']
+      : ['طلباتي', 'البحث', 'السلة', 'المساعدة'];
+
+    if (langBucket === 'ar') return s;
+    if (langBucket === 'ur') {
+      return userRole === 'guest'
+        ? ['رجسٹر کیسے کروں؟', 'زمرے', 'ادائیگی کے طریقے', 'رابطہ']
+        : userRole === 'seller'
+        ? ['پروڈکٹ شامل کریں', 'نئے آرڈرز', 'رپورٹس', 'کمائی']
+        : userRole === 'admin'
+        ? ['یوزرز', 'اسٹورز', 'رپورٹس', 'سیٹنگز']
+        : ['میرے آرڈرز', 'تلاش', 'کارٹ', 'مدد'];
+    }
+
+    return userRole === 'guest'
+      ? ['How do I register?', 'Categories', 'Payment methods', 'Contact']
+      : userRole === 'seller'
+      ? ['Add a product', 'New orders', 'Reports', 'Earnings']
+      : userRole === 'admin'
+      ? ['Users', 'Stores', 'Reports', 'Settings']
+      : ['My orders', 'Search', 'Cart', 'Help'];
+  })();
   
   return (
     <>
@@ -425,7 +480,11 @@ ${user?.name ? `اسم المستخدم: ${user.name}` : ''}
         
         {/* تلميح */}
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-          {isArabic ? 'مساعد STAR LUX' : 'STAR LUX Assistant'}
+          {langBucket === 'ar'
+            ? 'مساعد STAR LUX'
+            : langBucket === 'ur'
+            ? 'STAR LUX اسسٹنٹ'
+            : 'STAR LUX Assistant'}
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45" />
         </div>
       </button>

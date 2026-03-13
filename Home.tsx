@@ -453,15 +453,15 @@ export default function Home() {
         {/* Why Choose Section */}
         <section className="container mx-auto px-4 section-lg">
           <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
-            {language === 'ar-IQ' ? 'لماذا تختار STAR LUX' : 'Why Choose STAR LUX'}
+            {t('home.whyChooseTitle')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="border-border/50 text-center">
               <CardHeader>
                 <Users className="w-12 h-12 text-accent mx-auto mb-4" />
-                <CardTitle>{language === 'ar-IQ' ? 'مجتمع عالمي' : 'Global Community'}</CardTitle>
+                <CardTitle>{t('home.whyChoose.globalCommunityTitle')}</CardTitle>
                 <CardDescription>
-                  {language === 'ar-IQ' ? 'تواصل مع ملايين المستخدمين حول العالم' : 'Connect with millions of users worldwide'}
+                  {t('home.whyChoose.globalCommunityDesc')}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -469,9 +469,9 @@ export default function Home() {
             <Card className="border-border/50 text-center">
               <CardHeader>
                 <Zap className="w-12 h-12 text-accent mx-auto mb-4" />
-                <CardTitle>{language === 'ar-IQ' ? 'سرعة فائقة' : 'Lightning Fast'}</CardTitle>
+                <CardTitle>{t('home.whyChoose.lightningFastTitle')}</CardTitle>
                 <CardDescription>
-                  {language === 'ar-IQ' ? 'محسّن للسرعة والأداء العالي' : 'Optimized for speed and performance'}
+                  {t('home.whyChoose.lightningFastDesc')}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -479,9 +479,9 @@ export default function Home() {
             <Card className="border-border/50 text-center">
               <CardHeader>
                 <Lock className="w-12 h-12 text-accent mx-auto mb-4" />
-                <CardTitle>{language === 'ar-IQ' ? 'آمن ومحمي' : 'Secure & Safe'}</CardTitle>
+                <CardTitle>{t('home.whyChoose.secureSafeTitle')}</CardTitle>
                 <CardDescription>
-                  {language === 'ar-IQ' ? 'أمان على مستوى المؤسسات لراحة بالك' : 'Enterprise-grade security for your peace of mind'}
+                  {t('home.whyChoose.secureSafeDesc')}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -492,12 +492,10 @@ export default function Home() {
         <section className="bg-gradient-to-br from-accent/10 via-background to-accent/5 section-lg border-y border-border">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-center">
-              {language === 'ar-IQ' ? 'تواصل معنا' : 'Contact Us'}
+              {t('home.contactTitle')}
             </h2>
             <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-              {language === 'ar-IQ' 
-                ? 'نحن هنا لمساعدتك! تواصل معنا عبر أي من قنوات التواصل التالية'
-                : 'We are here to help! Contact us through any of the following channels'}
+              {t('home.contactSubtitle')}
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-4xl mx-auto">
@@ -568,7 +566,7 @@ export default function Home() {
                       <WhatsAppIcon />
                     </div>
                     <p className="font-semibold text-sm">WhatsApp</p>
-                    <p className="text-xs text-muted-foreground">{language === 'ar-IQ' ? 'دردشة مباشرة' : 'Direct Chat'}</p>
+                    <p className="text-xs text-muted-foreground">{t('home.whatsappDirectChat')}</p>
                   </CardContent>
                 </Card>
               </a>
@@ -584,7 +582,7 @@ export default function Home() {
                       <Mail className="w-6 h-6 text-white" />
                     </div>
                     <p className="font-semibold text-sm">Email</p>
-                    <p className="text-xs text-muted-foreground truncate">{language === 'ar-IQ' ? 'راسلنا' : 'Email Us'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t('home.emailUs')}</p>
                   </CardContent>
                 </Card>
               </a>
@@ -595,12 +593,10 @@ export default function Home() {
         {/* CTA Section */}
         <section className="container mx-auto px-4 !py-24 md:!py-28 lg:!py-32 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            {language === 'ar-IQ' ? 'هل أنت مستعد للبدء؟' : 'Ready to Get Started?'}
+            {t('home.ctaTitle')}
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            {language === 'ar-IQ' 
-              ? 'انضم إلى آلاف المشترين والبائعين على STAR LUX اليوم'
-              : 'Join thousands of buyers and sellers on STAR LUX today'}
+            {t('home.ctaSubtitle')}
           </p>
           <div className="flex flex-wrap gap-6 justify-center">
             <Button size="lg" onClick={() => navigate("/register-new")}>
@@ -619,7 +615,7 @@ export default function Home() {
               <div>
                 <h3 className="font-bold text-xl mb-4 text-accent">STAR LUX</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {language === 'ar-IQ' ? 'منصة تجارة إلكترونية عالمية للجميع' : 'Global marketplace for everyone'}
+                  {t('home.footer.tagline')}
                 </p>
                 {/* Social Icons in Footer */}
                 <div className="flex gap-3">
@@ -638,32 +634,32 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">{language === 'ar-IQ' ? 'الشركة' : 'Company'}</h4>
+                <h4 className="font-semibold mb-4">{t('home.footer.company')}</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="/about" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'من نحن' : 'About'}</a></li>
-                  <li><a href="/blog" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'المدونة' : 'Blog'}</a></li>
-                  <li><a href="/careers" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'الوظائف' : 'Careers'}</a></li>
+                  <li><a href="/about" className="hover:text-foreground transition-colors">{t('home.footer.about')}</a></li>
+                  <li><a href="/blog" className="hover:text-foreground transition-colors">{t('home.footer.blog')}</a></li>
+                  <li><a href="/careers" className="hover:text-foreground transition-colors">{t('home.footer.careers')}</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">{language === 'ar-IQ' ? 'الدعم' : 'Support'}</h4>
+                <h4 className="font-semibold mb-4">{t('home.footer.support')}</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="/help" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'مركز المساعدة' : 'Help Center'}</a></li>
-                  <li><a href="/contact" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'اتصل بنا' : 'Contact'}</a></li>
-                  <li><a href="/faq" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'الأسئلة الشائعة' : 'FAQ'}</a></li>
+                  <li><a href="/help" className="hover:text-foreground transition-colors">{t('home.footer.helpCenter')}</a></li>
+                  <li><a href="/contact" className="hover:text-foreground transition-colors">{t('home.footer.contact')}</a></li>
+                  <li><a href="/faq" className="hover:text-foreground transition-colors">{t('home.footer.faq')}</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">{language === 'ar-IQ' ? 'قانوني' : 'Legal'}</h4>
+                <h4 className="font-semibold mb-4">{t('home.footer.legal')}</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="/privacy" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'الخصوصية' : 'Privacy'}</a></li>
-                  <li><a href="/terms" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'الشروط' : 'Terms'}</a></li>
-                  <li><a href="/cookies" className="hover:text-foreground transition-colors">{language === 'ar-IQ' ? 'ملفات تعريف الارتباط' : 'Cookies'}</a></li>
+                  <li><a href="/privacy" className="hover:text-foreground transition-colors">{t('home.footer.privacy')}</a></li>
+                  <li><a href="/terms" className="hover:text-foreground transition-colors">{t('home.footer.terms')}</a></li>
+                  <li><a href="/cookies" className="hover:text-foreground transition-colors">{t('home.footer.cookies')}</a></li>
                 </ul>
               </div>
             </div>
             <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-              <p>&copy; 2026 STAR LUX. {language === 'ar-IQ' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</p>
+              <p>&copy; 2026 STAR LUX. {t('home.footer.rights')}</p>
             </div>
           </div>
         </footer>

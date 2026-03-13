@@ -2115,7 +2115,7 @@ const chatbotRouter = router({
   chat: publicProcedure
     .input(z.object({
       message: z.string().min(1).max(1000),
-      language: z.enum(['ar', 'en']).default('ar'),
+      language: z.string().optional(),
       conversationId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -2147,7 +2147,18 @@ const chatbotRouter = router({
         content: String(m.content ?? ""),
       }));
       
-      const systemPrompt = input.language === 'ar' 
+      const resolveLanguageBucket = (raw: unknown): 'ar' | 'ur' | 'en' => {
+        const lang = String(raw ?? '').trim();
+        if (!lang) return 'ar';
+        const base = lang.split('-')[0]?.toLowerCase();
+        if (base === 'ar') return 'ar';
+        if (base === 'ur') return 'ur';
+        return 'en';
+      };
+
+      const langBucket = resolveLanguageBucket(input.language);
+
+      const systemPrompt = langBucket === 'ar'
         ? `أنت مساعد ذكي لمنصة STAR LUX للتجارة الإلكترونية.
 
 معلومات المنصة:
@@ -2173,6 +2184,34 @@ const chatbotRouter = router({
 5) تجنّب الإيموجي إلا عند الحاجة (0-1).
 
 ابدأ بالإجابة مباشرة ثم اقترح خطوة عملية واحدة.`
+        : langBucket === 'ur'
+        ? `آپ STAR LUX ای کامرس پلیٹ فارم کے لیے ایک ذہین اسسٹنٹ ہیں۔
+
+Platform Info:
+- Name: STAR LUX
+- Description: Global multi-vendor e-commerce platform
+- Categories: Electronics, Fashion, Home & Garden, Health & Beauty, Sports
+- Payment: Visa, Mastercard, Asia Pay, Zain Cash
+- Shipping: Free for orders over $50
+- Returns: Within 14 days
+
+Contact:
+- Instagram: @0q.b4
+- TikTok: @4j_j7
+- Telegram: @T54_5
+- WhatsApp: +9647819501604
+- Email: ahmedyassin555555555@gmail.com
+
+Precision & transparency rules (very important):
+1) Do not invent details, numbers, or policies not provided.
+2) If asked about order/shipping/account status: clearly say you don't have access to the user's private data; ask for an order number or direct them to “My Orders” or support.
+3) If the question is ambiguous: ask one clarifying question before giving generic steps.
+4) Keep the reply 3–6 lines; use short bullet points when helpful.
+5) Avoid emojis unless necessary (0–1).
+
+IMPORTANT: Reply in Urdu.
+
+Answer directly first, then propose one practical next step.`
         : `You are a smart assistant for STAR LUX e-commerce platform.
 
 Platform Info:
@@ -2207,8 +2246,10 @@ Answer directly first, then propose one practical next step.`;
             {
               role: "system",
               content:
-                input.language === "ar"
+                langBucket === "ar"
                   ? `منتجات مقترحة من قاعدة البيانات (قد تساعد في الإجابة):\n${JSON.stringify(productHints)}`
+                  : langBucket === "ur"
+                  ? `ڈیٹابیس سے تجویز کردہ مصنوعات (جواب میں مدد کر سکتی ہیں):\n${JSON.stringify(productHints)}`
                   : `Suggested products from DB (may help):\n${JSON.stringify(productHints)}`,
             },
             { role: 'user', content: input.message },
@@ -2216,8 +2257,10 @@ Answer directly first, then propose one practical next step.`;
         });
         
         const content = (response as any)?.choices?.[0]?.message?.content || 
-          (input.language === 'ar' 
+          (langBucket === 'ar' 
             ? 'عذراً، لم أتمكن من معالجة طلبك. يرجى المحاولة مرة أخرى.'
+            : langBucket === 'ur'
+            ? 'معذرت، میں آپ کی درخواست پروسیس نہیں کر سکا۔ براہِ کرم دوبارہ کوشش کریں۔'
             : 'Sorry, I couldn\'t process your request. Please try again.');
         
         await appendChatMessage(conversationId, "assistant", content);
@@ -2226,48 +2269,63 @@ Answer directly first, then propose one practical next step.`;
         console.error('ChatBot LLM error:', error);
 
         const msg = input.message.toLowerCase();
-        const isAr = input.language === 'ar';
+        const isAr = langBucket === 'ar';
+        const isUr = langBucket === 'ur';
         const includesAny = (terms: string[]) => terms.some(t => msg.includes(t));
 
         const response = (() => {
           if (includesAny(['دفع', 'payment', 'visa', 'mastercard', 'زين', 'asia', 'آسيا'])) {
             return isAr
               ? '💳 طرق الدفع المتاحة: Visa / Mastercard / زين كاش / آسيا باي.'
+              : isUr
+              ? '💳 دستیاب ادائیگی کے طریقے: Visa / Mastercard / Zain Cash / Asia Pay.'
               : '💳 Available payment methods: Visa / Mastercard / Zain Cash / Asia Pay.';
           }
 
           if (includesAny(['شحن', 'توصيل', 'shipping', 'delivery', 'track', 'تتبع'])) {
             return isAr
               ? '🚚 الشحن عالمي (3-7 أيام)، ومجاني للطلبات فوق 50$. للتتبع: ادخل إلى (طلباتي) ثم اختر الطلب واضغط تتبع.'
+              : isUr
+              ? '🚚 عالمی شپنگ (3–7 دن) اور $50 سے اوپر آرڈرز پر مفت۔ ٹریکنگ کے لیے: (My Orders) میں جائیں، آرڈر کھولیں اور ٹریک کریں۔'
               : '🚚 Worldwide shipping (3–7 days). Free over $50. To track: go to “My Orders” then open the order and track it.';
           }
 
           if (includesAny(['ارجاع', 'استرجاع', 'refund', 'return', 'exchange', 'استبدال'])) {
             return isAr
               ? '↩️ الإرجاع خلال 14 يوم بشرط بقاء المنتج بحالته الأصلية. إذا ذكرت رقم الطلب أساعدك بخطوات الإرجاع.'
+              : isUr
+              ? '↩️ 14 دن کے اندر واپسی ممکن ہے اگر پروڈکٹ اصل حالت میں ہو۔ اگر آپ آرڈر نمبر دیں تو میں آپ کو مراحل بتا دوں گا۔'
               : '↩️ Returns within 14 days if the product is in original condition. If you share the order number, I’ll guide you.';
           }
 
           if (includesAny(['بائع', 'بيع', 'seller', 'store', 'متجر', 'اشتراك', 'plan', 'subscription', 'خطة'])) {
             return isAr
               ? '🏪 للبائعين: سجل كبائع ثم اختر خطة (مجانية/برو/كميونتي). العمولة 2%. أخبرني هل تريد فتح متجر أم ترقية خطة؟'
+              : isUr
+              ? '🏪 بیچنے والوں کے لیے: بطور Seller رجسٹر کریں پھر پلان منتخب کریں (Free/Pro/Community)۔ کمیشن 2% ہے۔ کیا آپ اسٹور بنانا چاہتے ہیں یا پلان اپ گریڈ؟'
               : '🏪 Sellers: register as a seller then choose a plan (Free/Pro/Community). Commission is 2%. Do you want to open a store or upgrade?';
           }
 
           if (includesAny(['قسم', 'اقسام', 'category', 'categories', 'فئة'])) {
             return isAr
               ? '📂 الأقسام: الإلكترونيات، الأزياء، المنزل والحديقة، الصحة والجمال، الرياضة. أي قسم يهمك؟'
+              : isUr
+              ? '📂 زمرے: Electronics، Fashion، Home & Garden، Health & Beauty، Sports۔ آپ کس زمرے میں دیکھنا چاہتے ہیں؟'
               : '📂 Categories: Electronics, Fashion, Home & Garden, Health & Beauty, Sports. Which one are you looking for?';
           }
 
           if (includesAny(['تواصل', 'support', 'help', 'مساعدة', 'contact', 'رقم'])) {
             return isAr
               ? '📞 الدعم: WhatsApp +9647819501604 | Telegram @T54_5 | Instagram @0q.b4 | TikTok @4j_j7 | Email ahmedyassin555555555@gmail.com'
+              : isUr
+              ? '📞 سپورٹ: WhatsApp +9647819501604 | Telegram @T54_5 | Instagram @0q.b4 | TikTok @4j_j7 | Email ahmedyassin555555555@gmail.com'
               : '📞 Support: WhatsApp +9647819501604 | Telegram @T54_5 | Instagram @0q.b4 | TikTok @4j_j7 | Email ahmedyassin555555555@gmail.com';
           }
 
           return isAr
             ? '🤖 فهمت سؤالك. هل تقصد (شراء/دفع/شحن/إرجاع/فتح متجر)؟ اكتب كلمة واحدة من هذه وسأعطيك الخطوات مباشرة.'
+            : isUr
+            ? '🤖 سمجھ گیا۔ کیا آپ (خریداری / ادائیگی / شپنگ / واپسی / فروخت) کے بارے میں پوچھ رہے ہیں؟ ایک لفظ لکھیں اور میں آپ کو مرحلہ وار بتاؤں گا۔'
             : '🤖 Got it. Are you asking about (buying / payment / shipping / returns / selling)? Reply with one word and I’ll guide you step-by-step.';
         })();
 

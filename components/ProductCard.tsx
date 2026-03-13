@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { OptimizedImage } from "@/OptimizedImage";
 import { StarRating } from "@/components/rating";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ShoppingCart, Share2 } from "lucide-react";
 
 export function ProductCard({
@@ -21,6 +22,7 @@ export function ProductCard({
   onShare?: () => Promise<void> | void;
   className?: string;
 }): React.JSX.Element {
+  const { t } = useLanguage();
   const title = String(product?.title ?? "");
   const description = String(product?.description ?? "");
   const price = Number(product?.price ?? 0);
@@ -75,7 +77,7 @@ export function ProductCard({
       </CardHeader>
 
       <CardContent>
-        <div className="text-sm text-muted-foreground line-clamp-2 mb-3">{description || (language === "ar-IQ" ? "لا يوجد وصف" : "No description")}</div>
+        <div className="text-sm text-muted-foreground line-clamp-2 mb-3">{description || t("product.noDescription")}</div>
 
         <div className="flex items-center justify-between gap-2">
           <div className="font-bold">${price}</div>
@@ -100,7 +102,7 @@ export function ProductCard({
                   await onBuyNow();
                 }}
               >
-                {language === "ar-IQ" ? "شراء الآن" : "Buy Now"}
+                {t("product.buyNow")}
               </Button>
             )}
 

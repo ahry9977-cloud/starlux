@@ -25,7 +25,7 @@ function safeParseImages(images: unknown): string[] {
 }
 
 export default function Store(): React.JSX.Element {
-  const { language, direction } = useLanguage();
+  const { language, direction, t } = useLanguage();
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
@@ -54,7 +54,7 @@ export default function Store(): React.JSX.Element {
 
   const handleShare = async (platform: 'whatsapp' | 'telegram' | 'facebook' | 'twitter' | 'copy_link') => {
     const url = `${window.location.origin}/store/${storeId}`;
-    const text = String(storeQuery.data?.name ?? (language === "ar-IQ" ? "المتجر" : "Store"));
+    const text = String(storeQuery.data?.name ?? t("store.titleFallback"));
 
     try {
       if (platform === 'copy_link') {
@@ -110,7 +110,7 @@ export default function Store(): React.JSX.Element {
               <StoreIcon className="w-6 h-6 text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{store?.name ?? (language === "ar-IQ" ? "المتجر" : "Store")}</h1>
+              <h1 className="text-2xl font-bold">{store?.name ?? t("store.titleFallback")}</h1>
               <p className="text-muted-foreground text-sm">{store?.description ?? ""}</p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function Store(): React.JSX.Element {
               </Button>
               <Button className="gap-2" onClick={() => handleShare('copy_link')}>
                 <Share2 className="w-4 h-4" />
-                {language === "ar-IQ" ? "نسخ الرابط" : "Copy link"}
+                {t("store.copyLink")}
               </Button>
             </div>
           </div>
@@ -146,14 +146,14 @@ export default function Store(): React.JSX.Element {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={language === "ar-IQ" ? "ابحث داخل المتجر..." : "Search in store..."}
+              placeholder={t("store.searchPlaceholder")}
               className="pr-4"
             />
           </div>
         </div>
 
         {storeQuery.isLoading || productsQuery.isLoading ? (
-          <div className="py-12 text-center text-muted-foreground">{language === "ar-IQ" ? "جاري التحميل..." : "Loading..."}</div>
+          <div className="py-12 text-center text-muted-foreground">{t("common.loading")}</div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -192,7 +192,7 @@ export default function Store(): React.JSX.Element {
 
             {products.length === 0 && (
               <div className="py-16 text-center">
-                <p className="text-muted-foreground">{language === "ar-IQ" ? "لا توجد منتجات" : "No products"}</p>
+                <p className="text-muted-foreground">{t("store.noProducts")}</p>
               </div>
             )}
           </>

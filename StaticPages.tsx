@@ -26,7 +26,7 @@ import {
 // مكون التنقل المشترك
 function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const [, navigate] = useLocation();
-  const { direction } = useLanguage();
+  const { direction, t } = useLanguage();
   
   return (
     <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-16" dir={direction}>
@@ -37,7 +37,7 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
           className="text-white/70 hover:text-white mb-6"
         >
           <ChevronLeft className="w-4 h-4 ml-2" />
-          العودة للرئيسية
+          {t('static.backHome')}
         </Button>
         <h1 className="text-4xl font-bold text-white mb-2">{title}</h1>
         {subtitle && <p className="text-white/70">{subtitle}</p>}
@@ -48,13 +48,13 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
 
 // صفحة من نحن
 export function AboutPage() {
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   return (
     <div className="min-h-screen bg-background" dir={direction}>
       <PageHeader 
-        title={language === 'ar-IQ' ? 'من نحن' : 'About Us'}
-        subtitle={language === 'ar-IQ' ? 'تعرف على قصتنا ورؤيتنا' : 'Learn about our story and vision'}
+        title={t('static.about.title')}
+        subtitle={t('static.about.subtitle')}
       />
       
       <div className="container mx-auto px-4 py-12">
@@ -63,17 +63,13 @@ export function AboutPage() {
           <section className="mb-12">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <Users className="w-6 h-6 text-amber-500" />
-              {language === 'ar-IQ' ? 'قصتنا' : 'Our Story'}
+              {t('static.about.ourStoryTitle')}
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              {language === 'ar-IQ' 
-                ? 'STAR LUX هي منصة تجارة إلكترونية عالمية تأسست بهدف ربط البائعين والمشترين من جميع أنحاء العالم. نؤمن بأن التجارة الإلكترونية يجب أن تكون متاحة للجميع، بغض النظر عن الموقع الجغرافي أو حجم العمل.'
-                : 'STAR LUX is a global e-commerce platform founded with the goal of connecting sellers and buyers from around the world. We believe that e-commerce should be accessible to everyone, regardless of geographic location or business size.'}
+              {t('static.about.ourStoryP1')}
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              {language === 'ar-IQ'
-                ? 'بدأنا رحلتنا برؤية واضحة: إنشاء سوق رقمي آمن وموثوق يمكّن رواد الأعمال من تحقيق أحلامهم ويوفر للمستهلكين تجربة تسوق استثنائية.'
-                : 'We started our journey with a clear vision: to create a safe and reliable digital marketplace that empowers entrepreneurs to achieve their dreams and provides consumers with an exceptional shopping experience.'}
+              {t('static.about.ourStoryP2')}
             </p>
           </section>
 
@@ -83,14 +79,12 @@ export function AboutPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-500" />
-                  {language === 'ar-IQ' ? 'رؤيتنا' : 'Our Vision'}
+                  {t('static.about.visionTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  {language === 'ar-IQ'
-                    ? 'أن نكون المنصة الرائدة للتجارة الإلكترونية في المنطقة العربية، ونساهم في تمكين الاقتصاد الرقمي.'
-                    : 'To be the leading e-commerce platform in the Arab region, contributing to the empowerment of the digital economy.'}
+                  {t('static.about.visionDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -99,14 +93,12 @@ export function AboutPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-amber-500" />
-                  {language === 'ar-IQ' ? 'رسالتنا' : 'Our Mission'}
+                  {t('static.about.missionTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  {language === 'ar-IQ'
-                    ? 'توفير منصة آمنة وسهلة الاستخدام تربط البائعين بالمشترين وتضمن تجربة تسوق موثوقة للجميع.'
-                    : 'Providing a safe and easy-to-use platform that connects sellers with buyers and ensures a reliable shopping experience for everyone.'}
+                  {t('static.about.missionDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -116,13 +108,13 @@ export function AboutPage() {
           <section>
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Globe className="w-6 h-6 text-green-500" />
-              {language === 'ar-IQ' ? 'قيمنا' : 'Our Values'}
+              {t('static.about.valuesTitle')}
             </h2>
             <div className="grid md:grid-cols-3 gap-4">
               {[
-                { icon: Shield, title: language === 'ar-IQ' ? 'الأمان' : 'Security', desc: language === 'ar-IQ' ? 'حماية بياناتك ومعاملاتك' : 'Protecting your data and transactions' },
-                { icon: Users, title: language === 'ar-IQ' ? 'الثقة' : 'Trust', desc: language === 'ar-IQ' ? 'بناء علاقات موثوقة' : 'Building reliable relationships' },
-                { icon: Award, title: language === 'ar-IQ' ? 'الجودة' : 'Quality', desc: language === 'ar-IQ' ? 'التميز في كل تفاصيل' : 'Excellence in every detail' },
+                { icon: Shield, title: t('static.about.value.securityTitle'), desc: t('static.about.value.securityDesc') },
+                { icon: Users, title: t('static.about.value.trustTitle'), desc: t('static.about.value.trustDesc') },
+                { icon: Award, title: t('static.about.value.qualityTitle'), desc: t('static.about.value.qualityDesc') },
               ].map((value, index) => (
                 <Card key={index} className="bg-card/50 border-border text-center p-4">
                   <value.icon className="w-8 h-8 mx-auto mb-3 text-amber-500" />
@@ -140,13 +132,13 @@ export function AboutPage() {
 
 // صفحة الخصوصية
 export function PrivacyPage() {
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   return (
     <div className="min-h-screen bg-background" dir={direction}>
       <PageHeader 
-        title={language === 'ar-IQ' ? 'سياسة الخصوصية' : 'Privacy Policy'}
-        subtitle={language === 'ar-IQ' ? 'آخر تحديث: يناير 2026' : 'Last updated: January 2026'}
+        title={t('static.privacy.title')}
+        subtitle={t('static.privacy.subtitle')}
       />
       
       <div className="container mx-auto px-4 py-12">
@@ -155,45 +147,37 @@ export function PrivacyPage() {
             <div className="space-y-6 text-muted-foreground">
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '1. جمع المعلومات' : '1. Information Collection'}
+                  {t('static.privacy.section1Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'نجمع المعلومات التي تقدمها لنا مباشرة عند إنشاء حساب، إجراء عملية شراء، أو التواصل معنا. تشمل هذه المعلومات: الاسم، البريد الإلكتروني، رقم الهاتف، وعنوان الشحن.'
-                    : 'We collect information you provide directly when creating an account, making a purchase, or contacting us. This includes: name, email, phone number, and shipping address.'}
+                  {t('static.privacy.section1Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '2. استخدام المعلومات' : '2. Use of Information'}
+                  {t('static.privacy.section2Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'نستخدم معلوماتك لمعالجة الطلبات، تحسين خدماتنا، إرسال التحديثات والعروض، وضمان أمان المنصة.'
-                    : 'We use your information to process orders, improve our services, send updates and offers, and ensure platform security.'}
+                  {t('static.privacy.section2Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '3. حماية المعلومات' : '3. Information Protection'}
+                  {t('static.privacy.section3Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'نستخدم تقنيات تشفير متقدمة لحماية بياناتك. لن نشارك معلوماتك الشخصية مع أطراف ثالثة دون موافقتك.'
-                    : 'We use advanced encryption technologies to protect your data. We will not share your personal information with third parties without your consent.'}
+                  {t('static.privacy.section3Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '4. حقوقك' : '4. Your Rights'}
+                  {t('static.privacy.section4Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'لديك الحق في الوصول إلى بياناتك، تصحيحها، أو حذفها. يمكنك التواصل معنا لممارسة هذه الحقوق.'
-                    : 'You have the right to access, correct, or delete your data. You can contact us to exercise these rights.'}
+                  {t('static.privacy.section4Body')}
                 </p>
               </section>
             </div>
@@ -206,13 +190,13 @@ export function PrivacyPage() {
 
 // صفحة الشروط والأحكام
 export function TermsPage() {
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   return (
     <div className="min-h-screen bg-background" dir={direction}>
       <PageHeader 
-        title={language === 'ar-IQ' ? 'الشروط والأحكام' : 'Terms & Conditions'}
-        subtitle={language === 'ar-IQ' ? 'آخر تحديث: يناير 2026' : 'Last updated: January 2026'}
+        title={t('static.terms.title')}
+        subtitle={t('static.terms.subtitle')}
       />
       
       <div className="container mx-auto px-4 py-12">
@@ -221,45 +205,37 @@ export function TermsPage() {
             <div className="space-y-6 text-muted-foreground">
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '1. قبول الشروط' : '1. Acceptance of Terms'}
+                  {t('static.terms.section1Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'باستخدامك لمنصة STAR LUX، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق، يرجى عدم استخدام المنصة.'
-                    : 'By using the STAR LUX platform, you agree to be bound by these terms and conditions. If you do not agree, please do not use the platform.'}
+                  {t('static.terms.section1Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '2. الحسابات' : '2. Accounts'}
+                  {t('static.terms.section2Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'أنت مسؤول عن الحفاظ على سرية معلومات حسابك وكلمة المرور. يجب إبلاغنا فوراً عن أي استخدام غير مصرح به.'
-                    : 'You are responsible for maintaining the confidentiality of your account information and password. You must notify us immediately of any unauthorized use.'}
+                  {t('static.terms.section2Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '3. المشتريات' : '3. Purchases'}
+                  {t('static.terms.section3Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'جميع المشتريات خاضعة للتوافر. نحتفظ بالحق في رفض أو إلغاء أي طلب لأي سبب.'
-                    : 'All purchases are subject to availability. We reserve the right to refuse or cancel any order for any reason.'}
+                  {t('static.terms.section3Body')}
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold text-foreground mb-3">
-                  {language === 'ar-IQ' ? '4. المسؤولية' : '4. Liability'}
+                  {t('static.terms.section4Title')}
                 </h2>
                 <p>
-                  {language === 'ar-IQ'
-                    ? 'STAR LUX ليست مسؤولة عن أي أضرار مباشرة أو غير مباشرة ناتجة عن استخدام المنصة.'
-                    : 'STAR LUX is not responsible for any direct or indirect damages resulting from the use of the platform.'}
+                  {t('static.terms.section4Body')}
                 </p>
               </section>
             </div>
@@ -272,19 +248,19 @@ export function TermsPage() {
 
 // صفحة اتصل بنا
 export function ContactPage() {
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   const contactInfo = [
-    { icon: Mail, label: language === 'ar-IQ' ? 'البريد الإلكتروني' : 'Email', value: 'ahmedyassin555555555@gmail.com', href: 'mailto:ahmedyassin555555555@gmail.com' },
-    { icon: Phone, label: language === 'ar-IQ' ? 'الهاتف' : 'Phone', value: '+964 781 950 1604', href: 'tel:+9647819501604' },
+    { icon: Mail, label: t('static.contact.emailLabel'), value: 'ahmedyassin555555555@gmail.com', href: 'mailto:ahmedyassin555555555@gmail.com' },
+    { icon: Phone, label: t('static.contact.phoneLabel'), value: '+964 781 950 1604', href: 'tel:+9647819501604' },
     { icon: MessageCircle, label: 'Telegram', value: '@T54_5', href: 'https://t.me/T54_5' },
   ];
   
   return (
     <div className="min-h-screen bg-background" dir={direction}>
       <PageHeader 
-        title={language === 'ar-IQ' ? 'اتصل بنا' : 'Contact Us'}
-        subtitle={language === 'ar-IQ' ? 'نحن هنا لمساعدتك' : 'We are here to help'}
+        title={t('static.contact.title')}
+        subtitle={t('static.contact.subtitle')}
       />
       
       <div className="container mx-auto px-4 py-12">
@@ -293,7 +269,7 @@ export function ContactPage() {
             {/* معلومات التواصل */}
             <div>
               <h2 className="text-2xl font-bold mb-6">
-                {language === 'ar-IQ' ? 'معلومات التواصل' : 'Contact Information'}
+                {t('static.contact.infoTitle')}
               </h2>
               <div className="space-y-4">
                 {contactInfo.map((item, index) => (
@@ -320,14 +296,14 @@ export function ContactPage() {
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>
-                  {language === 'ar-IQ' ? 'أرسل رسالة' : 'Send a Message'}
+                  {t('static.contact.formTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4">
                   <div>
                     <label className="text-sm text-muted-foreground">
-                      {language === 'ar-IQ' ? 'الاسم' : 'Name'}
+                      {t('static.contact.nameLabel')}
                     </label>
                     <input 
                       type="text" 
@@ -336,7 +312,7 @@ export function ContactPage() {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">
-                      {language === 'ar-IQ' ? 'البريد الإلكتروني' : 'Email'}
+                      {t('static.contact.emailLabel')}
                     </label>
                     <input 
                       type="email" 
@@ -345,7 +321,7 @@ export function ContactPage() {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">
-                      {language === 'ar-IQ' ? 'الرسالة' : 'Message'}
+                      {t('static.contact.messageLabel')}
                     </label>
                     <textarea 
                       rows={4}
@@ -353,7 +329,7 @@ export function ContactPage() {
                     />
                   </div>
                   <Button className="w-full bg-amber-500 hover:bg-amber-600">
-                    {language === 'ar-IQ' ? 'إرسال' : 'Send'}
+                    {t('static.contact.sendButton')}
                   </Button>
                 </form>
               </CardContent>
@@ -367,39 +343,39 @@ export function ContactPage() {
 
 // صفحة مركز المساعدة
 export function HelpPage() {
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   const faqs = [
     {
-      q: language === 'ar-IQ' ? 'كيف أنشئ حساب؟' : 'How do I create an account?',
-      a: language === 'ar-IQ' ? 'انقر على "تسجيل" في أعلى الصفحة وأدخل بياناتك.' : 'Click "Sign Up" at the top of the page and enter your details.'
+      q: t('static.help.faq1Q'),
+      a: t('static.help.faq1A')
     },
     {
-      q: language === 'ar-IQ' ? 'كيف أتتبع طلبي؟' : 'How do I track my order?',
-      a: language === 'ar-IQ' ? 'يمكنك تتبع طلبك من لوحة التحكم في قسم "طلباتي".' : 'You can track your order from the dashboard in the "My Orders" section.'
+      q: t('static.help.faq2Q'),
+      a: t('static.help.faq2A')
     },
     {
-      q: language === 'ar-IQ' ? 'ما هي طرق الدفع المتاحة؟' : 'What payment methods are available?',
-      a: language === 'ar-IQ' ? 'نقبل زين كاش، ماستركارد، البطاقات المحلية، والدفع عند الاستلام.' : 'We accept Zain Cash, Mastercard, local cards, and cash on delivery.'
+      q: t('static.help.faq3Q'),
+      a: t('static.help.faq3A')
     },
     {
-      q: language === 'ar-IQ' ? 'كيف أصبح بائعاً؟' : 'How do I become a seller?',
-      a: language === 'ar-IQ' ? 'سجل حساب جديد واختر "بائع" ثم أنشئ متجرك.' : 'Register a new account, select "Seller", then create your store.'
+      q: t('static.help.faq4Q'),
+      a: t('static.help.faq4A')
     },
   ];
   
   return (
     <div className="min-h-screen bg-background" dir={direction}>
       <PageHeader 
-        title={language === 'ar-IQ' ? 'مركز المساعدة' : 'Help Center'}
-        subtitle={language === 'ar-IQ' ? 'إجابات على أسئلتك الشائعة' : 'Answers to your common questions'}
+        title={t('static.help.title')}
+        subtitle={t('static.help.subtitle')}
       />
       
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
             <HelpCircle className="w-6 h-6 text-amber-500" />
-            {language === 'ar-IQ' ? 'الأسئلة الشائعة' : 'Frequently Asked Questions'}
+            {t('static.help.faqTitle')}
           </h2>
           
           <div className="space-y-4">
@@ -419,13 +395,13 @@ export function HelpPage() {
             <CardContent className="p-6 text-center">
               <HelpCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">
-                {language === 'ar-IQ' ? 'لم تجد إجابتك؟' : "Didn't find your answer?"}
+                {t('static.help.notFoundTitle')}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {language === 'ar-IQ' ? 'تواصل معنا مباشرة وسنساعدك' : 'Contact us directly and we will help you'}
+                {t('static.help.notFoundSubtitle')}
               </p>
               <Button className="bg-amber-500 hover:bg-amber-600" onClick={() => window.location.href = '/contact'}>
-                {language === 'ar-IQ' ? 'اتصل بنا' : 'Contact Us'}
+                {t('static.help.contactButton')}
               </Button>
             </CardContent>
           </Card>
@@ -438,20 +414,20 @@ export function HelpPage() {
 // صفحة 404 محسّنة
 export function NotFoundPage() {
   const [, navigate] = useLocation();
-  const { direction, language } = useLanguage();
+  const { direction, t } = useLanguage();
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4" dir={direction}>
       <div className="text-center">
         <h1 className="text-9xl font-bold text-white/20 mb-4">404</h1>
         <h2 className="text-2xl font-bold text-white mb-2">
-          {language === 'ar-IQ' ? 'الصفحة غير موجودة' : 'Page Not Found'}
+          {t('static.notFound.title')}
         </h2>
         <p className="text-white/70 mb-6">
-          {language === 'ar-IQ' ? 'عذراً، الصفحة التي تبحث عنها غير موجودة' : 'Sorry, the page you are looking for does not exist'}
+          {t('static.notFound.subtitle')}
         </p>
         <Button onClick={() => navigate('/')} className="bg-amber-500 hover:bg-amber-600">
-          {language === 'ar-IQ' ? 'العودة للرئيسية' : 'Go Home'}
+          {t('static.notFound.goHome')}
         </Button>
       </div>
     </div>

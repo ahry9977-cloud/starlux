@@ -130,12 +130,12 @@ export function AppNavbar({
 
             {switchable && toggleTheme && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 className="h-10 w-10 hidden md:inline-flex"
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
-                title={theme === "dark" ? "Light mode" : "Dark mode"}
+                title={t("nav.toggleTheme")}
               >
                 {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
@@ -197,9 +197,7 @@ export function AppNavbar({
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="justify-start" onClick={toggleTheme}>
-                        {theme === "dark"
-                          ? language === "ar-IQ" ? "الوضع الفاتح" : "Light mode"
-                          : language === "ar-IQ" ? "الوضع الداكن" : "Dark mode"}
+                        {theme === "dark" ? t("nav.lightMode") : t("nav.darkMode")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -226,7 +224,7 @@ export function AppNavbar({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder={language === "ar-IQ" ? "ابحث عن منتجات..." : "Search products..."}
+              placeholder={t("nav.searchProducts")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 bg-background/40"
