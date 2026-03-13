@@ -435,6 +435,41 @@ export const userSearchHistory = pgTable("user_search_history", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const interactionLogs = pgTable("interaction_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  sessionId: varchar("session_id", { length: 128 }),
+  eventType: varchar("event_type", { length: 48 }).notNull(),
+  entityType: varchar("entity_type", { length: 48 }),
+  entityId: integer("entity_id"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const aiUserProfiles = pgTable("ai_user_profiles", {
+  userId: integer("user_id").primaryKey(),
+  profileJson: text("profile_json").notNull().default("{}"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const recommendationData = pgTable("recommendation_data", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  productId: integer("product_id").notNull(),
+  score: doublePrecision("score").notNull().default(0),
+  reason: varchar("reason", { length: 120 }),
+  modelVersion: varchar("model_version", { length: 64 }).notNull().default("heuristic-v1"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const productVectors = pgTable("product_vectors", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  model: varchar("model", { length: 80 }).notNull().default("tfidf-v1"),
+  vector: text("vector").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

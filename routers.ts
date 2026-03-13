@@ -10,6 +10,11 @@ import {
   createUser,
   updateUser,
   updateUserLoginAttempts,
+  logInteraction,
+  getAiUserProfile,
+  upsertAiUserProfile,
+  getRecommendationsForUser,
+  smartSearchProducts,
   getPasswordResetByEmail,
   createPasswordReset,
   markPasswordResetAsUsed,
@@ -3143,10 +3148,99 @@ const searchRouter = router({
     }),
 });
 
+// ============================================
+// AI Engine Router - Phase 1
+// ============================================
+const aiRouter = router({
+  logInteraction: protectedProcedure
+    .input(
+      z.object({
+        eventType: z.enum([
+          "view",
+          "click",
+          "add_to_cart",
+          "remove_from_cart",
+          "purchase",
+          "search",
+          "wishlist_add",
+          "wishlist_remove",
+        ]),
+        entityType: z.enum(["product", "store", "category", "search"]).optional(),
+        entityId: z.number().optional(),
+        sessionId: z.string().optional(),
+        metadata: z.any().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await logInteraction({
+        userId: ctx.user?.id ?? null,
+        sessionId: input.sessionId ?? null,
+        eventType: input.eventType,
+        entityType: input.entityType ?? null,
+        entityId: input.entityId ?? null,
+        metadata: input.metadata,
+      });
+
+      const patch: any = {
+        lastEventAt: new Date().toISOString(),
+        lastEventType: input.eventType,
+      };
+      if (input.entityType === "product" && input.entityId) {
+        patch.lastProductId = input.entityId;
+      }
+      if (input.eventType === "search") {
+        const q = String((input.metadata as any)?.query ?? "").trim();
+        if (q) patch.lastSearchQuery = q;
+      }
+      if (ctx.user?.id) {
+        await upsertAiUserProfile(ctx.user.id, patch);
+      }
+
+      return { ok: true } as const;
+    }),
+
+  getProfile: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) return null;
+    return await getAiUserProfile(userId);
+  }),
+
+  getRecommendations: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.user?.id;
+      if (!userId) return [] as any[];
+      const limit = input?.limit ?? 12;
+      return await getRecommendationsForUser(userId, limit);
+    }),
+
+  smartSearch: publicProcedure
+    .input(
+      z.object({
+        query: z.string().min(1).max(200),
+        limit: z.number().min(1).max(50).optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const results = await smartSearchProducts(input.query, input.limit ?? 20);
+      if (ctx.user?.id) {
+        await logInteraction({
+          userId: ctx.user.id,
+          eventType: "search",
+          entityType: "search",
+          entityId: null,
+          metadata: { query: input.query, limit: input.limit ?? 20 },
+        });
+      }
+      return results;
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   admin: adminRouter,
+  ai: aiRouter,
   seller: sellerRouter,
   cart: cartRouter,
   products: productsRouter,
