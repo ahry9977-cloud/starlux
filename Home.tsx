@@ -62,6 +62,10 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
 
+  const safeArray = <T,>(input: unknown): T[] => {
+    return Array.isArray(input) ? (input as T[]) : [];
+  };
+
   // جلب الأقسام مع الفرعية
   const { data: categoriesData } = trpc.products.getCategoriesHierarchy.useQuery();
 
@@ -113,7 +117,7 @@ export default function Home() {
   };
 
   const orderedCategories = useMemo(() => {
-    const list = (categoriesData ?? []) as any[];
+    const list = safeArray<any>(categoriesData);
     const nameKey = language === "ar-IQ" ? "nameAr" : "nameEn";
     return [...list].sort((a, b) => {
       const aFeatured = Boolean(a?.isFeatured);
@@ -131,19 +135,22 @@ export default function Home() {
   }, [categoriesData, language]);
 
   const homeProducts = useMemo(() => {
-    return (((latestProducts as any)?.products ?? []) as any[]).map(normalizeProduct);
+    const list = safeArray<any>((latestProducts as any)?.products);
+    return list.map(normalizeProduct);
   }, [latestProducts]);
 
   const recommendedProducts = useMemo(() => {
-    return ((((recommendedQuery.data as any)?.products ?? []) as any[]) as any[]).map(normalizeProduct);
+    const list = safeArray<any>((recommendedQuery.data as any)?.products);
+    return list.map(normalizeProduct);
   }, [recommendedQuery.data]);
 
   const trendingProducts = useMemo(() => {
-    return ((((trendingData as any)?.products ?? []) as any[]) as any[]).map(normalizeProduct);
+    const list = safeArray<any>((trendingData as any)?.products);
+    return list.map(normalizeProduct);
   }, [trendingData]);
 
   const topSharedProducts = useMemo(() => {
-    const items = (((topSharedQuery.data as any)?.items ?? []) as any[]) as any[];
+    const items = safeArray<any>((topSharedQuery.data as any)?.items);
     return items
       .map((item: any) => {
         const p = item?.product ?? null;
