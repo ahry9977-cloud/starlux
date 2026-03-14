@@ -4,16 +4,16 @@ import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
-import type { User } from "./drizzle/schema";
-import * as db from "./db";
-import { ENV } from "./env";
+import type { User } from "../drizzle/schema";
+import * as db from "../db";
+import { ENV } from "../env";
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
   GetUserInfoResponse,
   GetUserInfoWithJwtRequest,
   GetUserInfoWithJwtResponse,
-} from "./types/manusTypes";
+} from "../types/manusTypes";
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
@@ -39,8 +39,18 @@ class OAuthService {
   }
 
   private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
+    try {
+      const normalized = String(state)
+        .trim()
+        .replace(/\s/g, "+")
+        .replace(/-/g, "+")
+        .replace(/_/g, "/");
+      const padLen = normalized.length % 4;
+      const padded = padLen === 0 ? normalized : normalized + "=".repeat(4 - padLen);
+      return Buffer.from(padded, "base64").toString("utf8");
+    } catch {
+      return "";
+    }
   }
 
   async getTokenByCode(
@@ -49,6 +59,7 @@ class OAuthService {
   ): Promise<ExchangeTokenResponse> {
     const payload: ExchangeTokenRequest = {
       clientId: ENV.appId,
+      clientSecret: ENV.appSecret || undefined,
       grantType: "authorization_code",
       code,
       redirectUri: this.decodeState(state),

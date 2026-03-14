@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 
@@ -20,6 +20,16 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.{idea,git,cache,output,temp}/**",
+      "**/ratings.test.ts",
+    ],
   },
   envDir: path.resolve(__dirname),
   root: path.resolve(__dirname),

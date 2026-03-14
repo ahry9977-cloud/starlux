@@ -362,6 +362,29 @@ export const sellerPaymentMethods = pgTable("sellerpaymentmethods", {
   createdAt: timestamp("createdat", { withTimezone: true }).defaultNow(),
 });
 
+export const sellerPaymentAccounts = pgTable(
+  "seller_payment_accounts",
+  {
+    id: serial("id").primaryKey(),
+    sellerId: integer("seller_id").notNull(),
+    paymentProvider: varchar("payment_provider", { length: 64 }).notNull(),
+    merchantId: varchar("merchant_id", { length: 255 }),
+    merchantIdEnc: text("merchant_id_enc"),
+    apiKeyEnc: text("api_key_enc"),
+    apiSecretEnc: text("api_secret_enc"),
+    webhookSecretEnc: text("webhook_secret_enc"),
+    status: varchar("status", { length: 32 }).notNull().default("inactive"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    sellerProviderUnique: uniqueIndex("seller_payment_accounts_seller_provider_unique").on(
+      t.sellerId,
+      t.paymentProvider
+    ),
+  })
+);
+
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   orderId: integer("orderid").notNull(),

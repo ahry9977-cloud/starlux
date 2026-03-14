@@ -1,5 +1,6 @@
 export type ExchangeTokenRequest = {
   clientId: string;
+  clientSecret?: string;
   grantType: string;
   code: string;
   redirectUri: string;

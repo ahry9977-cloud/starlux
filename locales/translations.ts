@@ -153,6 +153,7 @@ const baseTranslations = {
   "auth.signUpButton": "Sign Up",
   "auth.email": "Email",
   "auth.password": "Password",
+  "auth.forgotPassword": "Forgot Password?",
   "common.loading": "Loading...",
   "common.error": "Error",
   "common.success": "Success",
@@ -1245,7 +1246,9 @@ export function getTranslation(lang: Language | string, key: TranslationKey): st
 }
 
 export function useTranslation(lang: Language = DEFAULT_LANGUAGE) {
-  return {
-    t: (key: TranslationKey) => getTranslation(lang, key),
+  const fn = ((key: TranslationKey) => getTranslation(lang, key)) as ((key: TranslationKey) => string) & {
+    t?: (key: TranslationKey) => string;
   };
+  fn.t = fn;
+  return fn;
 }

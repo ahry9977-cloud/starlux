@@ -94,6 +94,13 @@ export default function SellerDashboard() {
   const [, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [sindiPayForm, setSindiPayForm] = useState({
+    merchantId: "",
+    apiKey: "",
+    apiSecret: "",
+    webhookSecret: "",
+    status: "inactive" as "inactive" | "active",
+  });
   
   // Star Lux Sound System
   const { playClickSound, playNavigationSound, playSuccessSound, playErrorSound } = useStarLuxSound();
@@ -136,6 +143,9 @@ export default function SellerDashboard() {
     enabled: !!user && (user.role === "seller" || user.role === "admin"),
   });
   const paymentMethodsQuery = trpc.seller.getPaymentMethods.useQuery(undefined, {
+    enabled: !!user && (user.role === "seller" || user.role === "admin"),
+  });
+  const sindiPayAccountQuery = trpc.seller.getSindiPayAccount.useQuery(undefined, {
     enabled: !!user && (user.role === "seller" || user.role === "admin"),
   });
   const categoriesQuery = trpc.products.getCategories.useQuery();
@@ -221,6 +231,32 @@ export default function SellerDashboard() {
     onError: (error) => toast.error(error.message),
   });
 
+  const upsertSindiPayAccountMutation = trpc.seller.upsertSindiPayAccount.useMutation({
+    onSuccess: async () => {
+      toast.success("تم حفظ إعدادات SindiPay");
+      playSuccessSound();
+      await sindiPayAccountQuery.refetch();
+      setSindiPayForm((p) => ({ ...p, apiKey: "", apiSecret: "", webhookSecret: "" }));
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      playErrorSound();
+    },
+  });
+
+  const disableSindiPayAccountMutation = trpc.seller.disableSindiPayAccount.useMutation({
+    onSuccess: async () => {
+      toast.success("تم تعطيل SindiPay");
+      playSuccessSound();
+      await sindiPayAccountQuery.refetch();
+      setSindiPayForm({ merchantId: "", apiKey: "", apiSecret: "", webhookSecret: "", status: "inactive" });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      playErrorSound();
+    },
+  });
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       toast.success('تم تسجيل الخروج بنجاح');
@@ -242,6 +278,15 @@ export default function SellerDashboard() {
       });
     }
   }, [storeQuery.data]);
+
+  useEffect(() => {
+    const acc: any = sindiPayAccountQuery.data as any;
+    if (!acc) return;
+    setSindiPayForm((prev) => ({
+      ...prev,
+      status: (String(acc.status ?? "inactive") as any) === "active" ? "active" : "inactive",
+    }));
+  }, [sindiPayAccountQuery.data]);
 
   // Auth guard
   useEffect(() => {
@@ -932,6 +977,107 @@ export default function SellerDashboard() {
                       </DialogContent>
                     </Dialog>
                   </div>
+
+                  <Card className="border-amber-200 bg-white/80 backdrop-blur-lg">
+                    <CardHeader>
+                      <CardTitle className="text-amber-800 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5" />
+                        إعدادات SindiPay
+                      </CardTitle>
+                      <CardDescription>
+                        اربط حساب SindiPay الخاص بك. يتم تشفير جميع المفاتيح داخل قاعدة البيانات.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Badge
+                          variant={(sindiPayAccountQuery.data as any)?.status === "active" ? "default" : "secondary"}
+                          className={(sindiPayAccountQuery.data as any)?.status === "active" ? "bg-green-600" : undefined}
+                        >
+                          {(sindiPayAccountQuery.data as any)?.status === "active" ? "✓ مفعل" : "غير مفعل"}
+                        </Badge>
+                        {(sindiPayAccountQuery.data as any)?.merchantIdMasked && (
+                          <Badge variant="outline">Merchant: {(sindiPayAccountQuery.data as any).merchantIdMasked}</Badge>
+                        )}
+                        {(sindiPayAccountQuery.data as any)?.hasApiKey && <Badge variant="outline">API Key محفوظ</Badge>}
+                        {(sindiPayAccountQuery.data as any)?.hasWebhookSecret && (
+                          <Badge variant="outline">Webhook Secret محفوظ</Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Merchant ID</Label>
+                          <Input
+                            value={sindiPayForm.merchantId}
+                            onChange={(e) => setSindiPayForm((p) => ({ ...p, merchantId: e.target.value }))}
+                            placeholder="أدخل Merchant ID"
+                            className="border-amber-200 focus:border-amber-400"
+                          />
+                        </div>
+                        <div>
+                          <Label>الحالة</Label>
+                          <Select
+                            value={sindiPayForm.status}
+                            onValueChange={(v) => setSindiPayForm((p) => ({ ...p, status: v as any }))}
+                          >
+                            <SelectTrigger className="border-amber-200">
+                              <SelectValue placeholder="اختر الحالة" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="inactive">غير مفعل</SelectItem>
+                              <SelectItem value="active">مفعل</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>API Key</Label>
+                          <Input
+                            value={sindiPayForm.apiKey}
+                            onChange={(e) => setSindiPayForm((p) => ({ ...p, apiKey: e.target.value }))}
+                            placeholder="أدخل API Key"
+                            className="border-amber-200 focus:border-amber-400"
+                          />
+                        </div>
+                        <div>
+                          <Label>API Secret</Label>
+                          <Input
+                            value={sindiPayForm.apiSecret}
+                            onChange={(e) => setSindiPayForm((p) => ({ ...p, apiSecret: e.target.value }))}
+                            placeholder="أدخل API Secret"
+                            className="border-amber-200 focus:border-amber-400"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label>Webhook Secret</Label>
+                          <Input
+                            value={sindiPayForm.webhookSecret}
+                            onChange={(e) => setSindiPayForm((p) => ({ ...p, webhookSecret: e.target.value }))}
+                            placeholder="أدخل Webhook Secret"
+                            className="border-amber-200 focus:border-amber-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={handleSaveSindiPay}
+                          disabled={upsertSindiPayAccountMutation.isPending}
+                          className="bg-gradient-to-l from-amber-400 to-orange-500"
+                        >
+                          {upsertSindiPayAccountMutation.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleDisableSindiPay}
+                          disabled={disableSindiPayAccountMutation.isPending}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          {disableSindiPayAccountMutation.isPending ? "جاري التعطيل..." : "تعطيل SindiPay"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {sellerPaymentMethods.map((method: any) => (

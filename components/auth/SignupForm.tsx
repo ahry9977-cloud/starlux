@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, AlertCircle, CheckCircle, Store, ShoppingBag } from 'lucide-react';
-import { GlowInput } from './GlowInput';
-import { GlowButton } from './GlowButton';
-import { PasswordStrength } from './PasswordStrength';
+import { GlowInput } from '../../GlowInput';
+import { GlowButton } from '../../GlowButton';
+import { PasswordStrength } from '../../PasswordStrength';
 import { cn } from '@/lib/utils';
 
 type AccountType = 'user' | 'seller';

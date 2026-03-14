@@ -1,6 +1,7 @@
 import { Pool as PgPool } from "pg";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { ENV } from "./env";
@@ -23,6 +24,7 @@ import {
   payments,
   products,
   roleAuditLogs,
+  sellerPaymentAccounts,
   sellerPaymentMethods,
   shares,
   stores,
@@ -30,6 +32,281 @@ import {
   users,
   type User,
 } from "./drizzle/schema";
+
+type PaymentProviderId = "sindipay";
+
+function getPaymentEncryptionKeyBytes(): Buffer {
+  const raw = String(process.env.PAYMENT_ENCRYPTION_KEY ?? "").trim();
+  if (!raw) {
+    throw new Error("PAYMENT_ENCRYPTION_KEY is not configured");
+  }
+
+  let key: Buffer;
+  try {
+    key = Buffer.from(raw, "base64");
+  } catch {
+    key = Buffer.from(raw, "utf8");
+  }
+
+  if (key.length === 32) return key;
+  if (key.length > 32) return key.subarray(0, 32);
+  return crypto.createHash("sha256").update(key).digest();
+}
+
+function encryptSecret(plain: string): string {
+  const key = getPaymentEncryptionKeyBytes();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const ciphertext = Buffer.concat([cipher.update(String(plain), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `v1:${iv.toString("base64")}:${tag.toString("base64")}:${ciphertext.toString("base64")}`;
+}
+
+function decryptSecret(enc: string): string {
+  const raw = String(enc ?? "");
+  if (!raw) return "";
+  const parts = raw.split(":");
+  if (parts.length !== 4 || parts[0] !== "v1") {
+    throw new Error("Unsupported encrypted secret format");
+  }
+  const [, ivB64, tagB64, dataB64] = parts;
+  const key = getPaymentEncryptionKeyBytes();
+  const iv = Buffer.from(ivB64, "base64");
+  const tag = Buffer.from(tagB64, "base64");
+  const data = Buffer.from(dataB64, "base64");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const plain = Buffer.concat([decipher.update(data), decipher.final()]);
+  return plain.toString("utf8");
+}
+
+export type SellerPaymentAccountPublic = {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+  merchantIdMasked: string | null;
+  status: string;
+  hasApiKey: boolean;
+  hasApiSecret: boolean;
+  hasWebhookSecret: boolean;
+  updatedAt: Date | null;
+};
+
+export type SellerPaymentAccountSecrets = {
+  apiKey: string;
+  apiSecret: string;
+  webhookSecret: string;
+};
+
+export async function upsertSellerPaymentAccount(input: {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+  merchantId?: string | null;
+  apiKey?: string | null;
+  apiSecret?: string | null;
+  webhookSecret?: string | null;
+  status?: "inactive" | "active";
+}) {
+  if (_sqlite) throw new Error("Seller payment accounts not supported on sqlite dev stub");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const now = new Date();
+  const existing = (await db
+    .select()
+    .from(sellerPaymentAccounts)
+    .where(
+      and(
+        eq(sellerPaymentAccounts.sellerId, Number(input.sellerId)),
+        eq(sellerPaymentAccounts.paymentProvider, String(input.paymentProvider))
+      )
+    )
+    .limit(1)) as any[];
+
+  const patch: any = {
+    merchantId: null,
+    status: input.status ?? "inactive",
+    updatedAt: now,
+  };
+
+  if (typeof input.merchantId === "string" && input.merchantId.length > 0) {
+    patch.merchantIdEnc = encryptSecret(input.merchantId);
+  }
+
+  if (typeof input.apiKey === "string" && input.apiKey.length > 0) {
+    patch.apiKeyEnc = encryptSecret(input.apiKey);
+  }
+  if (typeof input.apiSecret === "string" && input.apiSecret.length > 0) {
+    patch.apiSecretEnc = encryptSecret(input.apiSecret);
+  }
+  if (typeof input.webhookSecret === "string" && input.webhookSecret.length > 0) {
+    patch.webhookSecretEnc = encryptSecret(input.webhookSecret);
+  }
+
+  if (existing.length === 0) {
+    const inserted = await db
+      .insert(sellerPaymentAccounts)
+      .values({
+        sellerId: Number(input.sellerId),
+        paymentProvider: String(input.paymentProvider),
+        merchantId: null,
+        merchantIdEnc: patch.merchantIdEnc ?? null,
+        apiKeyEnc: patch.apiKeyEnc ?? null,
+        apiSecretEnc: patch.apiSecretEnc ?? null,
+        webhookSecretEnc: patch.webhookSecretEnc ?? null,
+        status: patch.status,
+        createdAt: now,
+        updatedAt: now,
+      } as any)
+      .returning({ id: (sellerPaymentAccounts as any).id });
+    return { id: Number((inserted as any)?.[0]?.id ?? 0) };
+  }
+
+  await db
+    .update(sellerPaymentAccounts)
+    .set(patch)
+    .where(eq((sellerPaymentAccounts as any).id, Number(existing[0].id)));
+
+  return { id: Number(existing[0].id) };
+}
+
+export async function disableSellerPaymentAccount(input: {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+}) {
+  if (_sqlite) return { success: true };
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(sellerPaymentAccounts)
+    .set({ status: "inactive", updatedAt: new Date() } as any)
+    .where(
+      and(
+        eq(sellerPaymentAccounts.sellerId, Number(input.sellerId)),
+        eq(sellerPaymentAccounts.paymentProvider, String(input.paymentProvider))
+      )
+    );
+
+  return { success: true };
+}
+
+export async function getSellerPaymentAccountPublic(input: {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+}): Promise<SellerPaymentAccountPublic | null> {
+  if (_sqlite) return null;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const rows = (await db
+    .select()
+    .from(sellerPaymentAccounts)
+    .where(
+      and(
+        eq(sellerPaymentAccounts.sellerId, Number(input.sellerId)),
+        eq(sellerPaymentAccounts.paymentProvider, String(input.paymentProvider))
+      )
+    )
+    .limit(1)) as any[];
+  const row = rows[0];
+  if (!row) return null;
+
+  let merchantIdPlain = "";
+  if (row.merchantIdEnc) {
+    try {
+      merchantIdPlain = decryptSecret(String(row.merchantIdEnc));
+    } catch {
+      merchantIdPlain = "";
+    }
+  } else if (row.merchantId) {
+    merchantIdPlain = String(row.merchantId);
+  }
+  const masked = merchantIdPlain
+    ? merchantIdPlain.length <= 6
+      ? merchantIdPlain
+      : `${merchantIdPlain.slice(0, 2)}***${merchantIdPlain.slice(-4)}`
+    : null;
+
+  return {
+    sellerId: Number(row.sellerId),
+    paymentProvider: String(row.paymentProvider) as PaymentProviderId,
+    merchantIdMasked: masked,
+    status: String(row.status ?? "inactive"),
+    hasApiKey: Boolean(row.apiKeyEnc),
+    hasApiSecret: Boolean(row.apiSecretEnc),
+    hasWebhookSecret: Boolean(row.webhookSecretEnc),
+    updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
+  };
+}
+
+export async function getSellerPaymentAccountSecrets(input: {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+}): Promise<SellerPaymentAccountSecrets | null> {
+  if (_sqlite) return null;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const rows = (await db
+    .select()
+    .from(sellerPaymentAccounts)
+    .where(
+      and(
+        eq(sellerPaymentAccounts.sellerId, Number(input.sellerId)),
+        eq(sellerPaymentAccounts.paymentProvider, String(input.paymentProvider))
+      )
+    )
+    .limit(1)) as any[];
+  const row = rows[0];
+  if (!row) return null;
+
+  if (!row.apiKeyEnc || !row.apiSecretEnc || !row.webhookSecretEnc) {
+    return null;
+  }
+
+  return {
+    apiKey: decryptSecret(String(row.apiKeyEnc)),
+    apiSecret: decryptSecret(String(row.apiSecretEnc)),
+    webhookSecret: decryptSecret(String(row.webhookSecretEnc)),
+  };
+}
+
+export async function getSellerPaymentAccountCredentials(input: {
+  sellerId: number;
+  paymentProvider: PaymentProviderId;
+}): Promise<(SellerPaymentAccountSecrets & { merchantId: string; status: string }) | null> {
+  if (_sqlite) return null;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const rows = (await db
+    .select()
+    .from(sellerPaymentAccounts)
+    .where(
+      and(
+        eq(sellerPaymentAccounts.sellerId, Number(input.sellerId)),
+        eq(sellerPaymentAccounts.paymentProvider, String(input.paymentProvider))
+      )
+    )
+    .limit(1)) as any[];
+  const row = rows[0];
+  if (!row) return null;
+
+  const merchantId = row.merchantIdEnc
+    ? decryptSecret(String(row.merchantIdEnc))
+    : row.merchantId
+      ? String(row.merchantId)
+      : "";
+  if (!merchantId || !row.apiKeyEnc || !row.apiSecretEnc || !row.webhookSecretEnc) return null;
+
+  return {
+    merchantId,
+    status: String(row.status ?? "inactive"),
+    apiKey: decryptSecret(String(row.apiKeyEnc)),
+    apiSecret: decryptSecret(String(row.apiSecretEnc)),
+    webhookSecret: decryptSecret(String(row.webhookSecretEnc)),
+  };
+}
 
 let _pgPool: PgPool | null = null;
 let _db: ReturnType<typeof drizzlePg> | null = null;
@@ -95,7 +372,14 @@ export async function getDb() {
 async function ensurePostgresSchema(pg: PgPool) {
   if (_pgSchemaEnsured) return;
 
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    Boolean(process.env.RAILWAY_ENVIRONMENT) ||
+    Boolean(process.env.RAILWAY_PROJECT_ID) ||
+    Boolean(process.env.RAILWAY_SERVICE_ID) ||
+    Boolean(process.env.RENDER) ||
+    Boolean(process.env.FLY_APP_NAME) ||
+    Boolean(process.env.HEROKU_APP_NAME);
   // Avoid unexpected schema mutations outside production unless explicitly allowed.
   const allowInit = isProduction || process.env.AUTO_INIT_DB === "1";
   if (!allowInit) return;
@@ -306,6 +590,35 @@ async function applyPostgresMigrations(pg: PgPool) {
   await pg.query(`CREATE INDEX IF NOT EXISTS chat_feedback_conv_time_idx ON chat_feedback(conversation_id, created_at DESC)`);
   await pg.query(`CREATE INDEX IF NOT EXISTS chat_feedback_user_time_idx ON chat_feedback(user_id, created_at DESC)`);
   await pg.query(`CREATE INDEX IF NOT EXISTS chat_feedback_msg_idx ON chat_feedback(message_id)`);
+
+  // ==============================
+  // Payment Integration Layer
+  // ==============================
+  await pg.query(`
+    CREATE TABLE IF NOT EXISTS seller_payment_accounts (
+      id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+      seller_id INTEGER NOT NULL,
+      payment_provider VARCHAR(64) NOT NULL,
+      merchant_id VARCHAR(255) NULL,
+      merchant_id_enc TEXT NULL,
+      api_key_enc TEXT NULL,
+      api_secret_enc TEXT NULL,
+      webhook_secret_enc TEXT NULL,
+      status VARCHAR(32) NOT NULL DEFAULT 'inactive',
+      created_at TIMESTAMPTZ NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS merchant_id_enc TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS api_key_enc TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS api_secret_enc TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS webhook_secret_enc TEXT NULL`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'inactive'`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NULL DEFAULT CURRENT_TIMESTAMP`);
+  await pg.query(`ALTER TABLE IF EXISTS seller_payment_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NULL DEFAULT CURRENT_TIMESTAMP`);
+  await pg.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS seller_payment_accounts_seller_provider_unique ON seller_payment_accounts(seller_id, payment_provider)`
+  );
 }
 
 async function createSqliteDb() {
@@ -340,6 +653,14 @@ async function ensureSqliteTables(sqlite: any) {
 
 export const PLATFORM_COMMISSION_PERCENT = 2;
 export const PLATFORM_COMMISSION_RATE = PLATFORM_COMMISSION_PERCENT / 100;
+
+export function calculateCommission(amount: number) {
+  const safeAmount = Number.isFinite(amount) ? Number(amount) : 0;
+  const commissionRaw = safeAmount * PLATFORM_COMMISSION_RATE;
+  const commission = Math.round(commissionRaw * 100) / 100;
+  const netAmount = Math.round((safeAmount - commission) * 100) / 100;
+  return { commission, netAmount };
+}
 
 export const SHARE_PLATFORMS = ["whatsapp", "telegram", "facebook", "twitter", "copy_link"] as const;
 export type SharePlatform = (typeof SHARE_PLATFORMS)[number];
@@ -1774,6 +2095,36 @@ export async function createTransaction(_data: any) {
     .returning({ id: payments.id });
   const id = Number((inserted as any)?.[0]?.id ?? 0);
   return id as any;
+}
+
+export async function updatePaymentProviderRef(_paymentId: number, _providerRef: string | null) {
+  if (_sqlite) return;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(payments)
+    .set({ providerRef: _providerRef } as any)
+    .where(eq(payments.id, Number(_paymentId)));
+}
+
+export async function updatePaymentStatus(_paymentId: number, _status: string) {
+  if (_sqlite) return;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(payments)
+    .set({ status: String(_status) } as any)
+    .where(eq(payments.id, Number(_paymentId)));
+}
+
+export async function updateOrderPaymentStatus(_orderId: number, _status: string) {
+  if (_sqlite) return;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(orders)
+    .set({ paymentStatus: String(_status), updatedAt: new Date() } as any)
+    .where(eq(orders.id, Number(_orderId)));
 }
 
 export async function addRating(_data: any) {

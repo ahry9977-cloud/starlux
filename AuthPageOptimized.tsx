@@ -319,7 +319,7 @@ const AuthPageOptimized: React.FC = () => {
     setIsLoading(true);
     try {
       // استخدام OAuth flow
-      window.location.href = '/api/oauth/login';
+      window.location.href = '/api/oauth/login?provider=google';
     } catch (err: any) {
       setError(err.message || 'فشل تسجيل الدخول');
       setIsLoading(false);

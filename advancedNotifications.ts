@@ -7,7 +7,7 @@ import { getDb } from "./db";
 import { notifications, notificationSettings, notificationLogs, supportedCurrencies, currencyConversions, userDeviceTokens } from "./drizzle/schema";
 import { eq, and, desc, sql, inArray, lt, isNull, or } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
-import { sendPushToTokens } from "./pushNotifications";
+import { sendPushToTokens } from "./lib/pushNotifications";
 
 // ============= أنواع الإشعارات =============
 export type NotificationCategory = 

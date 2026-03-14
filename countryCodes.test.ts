@@ -6,7 +6,7 @@ import {
   getCountryByCode,
   searchCountries,
   defaultCountry
-} from "../shared/countryCodes";
+} from "./shared/countryCodes";
 
 describe("Country Codes System", () => {
   describe("countryCodes list", () => {

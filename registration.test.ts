@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
-import type { TrpcContext } from "./_core/context";
+import { createContext } from "./_core/context";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -18,7 +18,10 @@ function createContext(): TrpcContext {
   };
 }
 
-describe("Registration System", () => {
+const _hasPostgres = Boolean(process.env.DATABASE_URL && /^postgres(ql)?:\/\//i.test(process.env.DATABASE_URL));
+const describeDb = _hasPostgres ? describe : describe.skip;
+
+describeDb("Registration System", () => {
   describe("registerUser", () => {
     it("should register a new user with phone verification", async () => {
       const ctx = createContext();
@@ -220,7 +223,7 @@ describe("Registration System", () => {
   });
 
   describe("Login", () => {
-    it("should login with valid credentials", async () => {
+    it("should reject login for unverified accounts until activation", async () => {
       const ctx = createContext();
       const caller = appRouter.createCaller(ctx);
       const uniqueEmail = `login_${Date.now()}@example.com`;
@@ -232,14 +235,15 @@ describe("Registration System", () => {
         name: "Login User",
       });
 
-      // Then login
-      const result = await caller.auth.login({
-        email: uniqueEmail,
-        password: "LoginPassword123",
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.userId).toBeDefined();
+      try {
+        await caller.auth.login({
+          email: uniqueEmail,
+          password: "LoginPassword123",
+        });
+        expect.fail("Should have thrown an error");
+      } catch (err: any) {
+        expect(String(err?.message ?? err)).toContain("يرجى تفعيل الحساب أولاً");
+      }
     });
 
     it("should reject invalid password", async () => {

@@ -49,10 +49,10 @@ import { roleRouter } from "./roleRouter";
 import { users, passwordResets, otpVerifications, stores, sellerPaymentMethods } from "./drizzle/schema";
 import { eq, and, or, sql, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail } from "./emailNotifications";
+import { sendWelcomeEmail } from "./lib/emailNotifications";
 import { ENV } from "./env";
 
-const ALLOWED_PAYMENT_METHODS = ['mastercard', 'visa', 'asia_pay', 'zain_cash'] as const;
+const ALLOWED_PAYMENT_METHODS = ['mastercard', 'visa', 'asia_pay', 'zain_cash', 'sindipay'] as const;
 const SELLER_PAYMENT_METHODS = ['sindipay'] as const;
 
 // Constants
@@ -490,7 +490,7 @@ const authRouter = router({
       preferredChannel: z.enum(['email', 'whatsapp', 'both']).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { createAndSendOTP } = await import('./otpSystem');
+      const { createAndSendOTP } = await import('./lib/otpSystem');
 
       const normalizedEmail = normalizeEmail(input.email);
       
@@ -533,7 +533,7 @@ const authRouter = router({
       otp: z.string().length(6),
     }))
     .mutation(async ({ input }) => {
-      const { verifyOTP } = await import('./otpSystem');
+      const { verifyOTP } = await import('./lib/otpSystem');
 
       const normalizedEmail = normalizeEmail(input.email);
       
@@ -563,7 +563,7 @@ const authRouter = router({
       newPassword: z.string().min(8),
     }))
     .mutation(async ({ input }) => {
-      const { resetPassword, validatePasswordStrength } = await import('./passwordReset');
+      const { resetPassword, validatePasswordStrength } = await import('./lib/passwordReset');
       
       // التحقق من قوة كلمة المرور
       const validation = validatePasswordStrength(input.newPassword);
@@ -589,7 +589,7 @@ const authRouter = router({
       password: z.string(),
     }))
     .query(async ({ input }) => {
-      const { validatePasswordStrength } = await import('./passwordReset');
+      const { validatePasswordStrength } = await import('./lib/passwordReset');
       return validatePasswordStrength(input.password);
     }),
 
@@ -720,7 +720,7 @@ const authRouter = router({
   // OAuth Login - تسجيل الدخول عبر Google/Facebook
   oauthLogin: publicProcedure
     .input(z.object({
-      provider: z.enum(['google', 'facebook']),
+      provider: z.enum(['google', 'facebook', 'github']),
       email: z.string().email(),
       name: z.string().min(1),
       providerId: z.string().min(1),
@@ -798,18 +798,18 @@ const authRouter = router({
         maxAge: ONE_YEAR_MS,
       });
 
-      // Step 7: إرجاع بيانات المستخدم
-      return {
-        success: true,
-        userId: user.id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-        isVerified: user.isVerified,
-        isNewUser: !user.lastSignedIn,
-        message: `تم تسجيل الدخول بنجاح عبر ${input.provider === 'google' ? 'جوجل' : 'فيسبوك'}`,
-      };
-    }),
+    // Step 7: إرجاع بيانات المستخدم
+    return {
+      success: true,
+      userId: user.id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      isVerified: user.isVerified,
+      isNewUser: !user.lastSignedIn,
+      message: `تم تسجيل الدخول بنجاح عبر ${input.provider === 'google' ? 'جوجل' : input.provider === 'facebook' ? 'فيسبوك' : 'جيتهاب'}`,
+    };
+  }),
 
   // إعادة إرسال OTP
   resendOTP: publicProcedure
@@ -819,7 +819,7 @@ const authRouter = router({
       channel: z.enum(['email', 'whatsapp', 'both']).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { resendOTP } = await import('./otpSystem');
+      const { resendOTP } = await import('./lib/otpSystem');
       
       const result = await resendOTP(input.identifier, input.purpose, input.channel);
       
@@ -844,7 +844,7 @@ const authRouter = router({
       preferredChannel: z.enum(['email', 'whatsapp', 'both']).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { createAndSendOTP } = await import('./otpSystem');
+      const { createAndSendOTP } = await import('./lib/otpSystem');
 
       const normalizedEmail = normalizeEmail(input.email);
       
@@ -881,7 +881,7 @@ const authRouter = router({
       otp: z.string().length(6),
     }))
     .mutation(async ({ input }) => {
-      const { verifyOTP } = await import('./otpSystem');
+      const { verifyOTP } = await import('./lib/otpSystem');
       
       const result = await verifyOTP(input.email, input.otp, 'registration');
       
@@ -911,6 +911,75 @@ const adminRouter = router({
   getStats: adminProcedure.query(async () => {
     return await getAdminStats();
   }),
+
+  getVulnerabilityFixPlan: adminProcedure
+    .input(
+      z.object({
+        scanId: z.string().min(1).max(128),
+        summary: z.object({
+          critical: z.number().min(0),
+          high: z.number().min(0),
+          medium: z.number().min(0),
+          low: z.number().min(0),
+          info: z.number().min(0),
+          total: z.number().min(0),
+        }),
+        vulnerabilities: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(256),
+              type: z.string().min(1).max(80),
+              severity: z.enum(["critical", "high", "medium", "low", "info"]),
+              title: z.string().min(1).max(200),
+              description: z.string().min(1).max(2000),
+              location: z.string().max(500).optional(),
+              recommendation: z.string().min(1).max(2000),
+            })
+          )
+          .max(200),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { invokeLLM } = await import("./_core/llm");
+
+      const vulns = (input.vulnerabilities ?? []).slice(0, 60).map((v) => ({
+        severity: v.severity,
+        title: v.title,
+        type: v.type,
+        location: v.location ?? null,
+        description: v.description,
+        recommendation: v.recommendation,
+      }));
+
+      const system = `أنت خبير أمن تطبيقات (AppSec) لمنصة STAR LUX.
+المطلوب: تقديم خطة إصلاح عملية بناءً على تقرير ثغرات.
+
+قواعد مهمة:
+1) لا تخترع ثغرات غير موجودة في القائمة.
+2) رتّب الأولوية: critical ثم high ثم medium ثم low ثم info.
+3) اكتب الخطة على شكل خطوات قصيرة قابلة للتنفيذ.
+4) لكل خطوة: (المشكلة) -> (التأثير) -> (الإصلاح المقترح) -> (ملاحظات تنفيذ/اختبار).
+5) إذا كان location غير واضح: اذكر "الموقع غير محدد" وقدم إرشاد عام.
+
+أعد الناتج باللغة العربية وبصيغة Markdown.`;
+
+      const user = `scanId: ${input.scanId}
+summary: ${JSON.stringify(input.summary)}
+vulnerabilities: ${JSON.stringify(vulns)}`;
+
+      const res = await invokeLLM({
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
+
+      const content =
+        (res as any)?.choices?.[0]?.message?.content?.trim() ||
+        "لم أتمكن من توليد توصيات حالياً. حاول مرة أخرى.";
+
+      return { content };
+    }),
 
   // Get all users
   getUsers: adminProcedure
@@ -1355,6 +1424,73 @@ const sellerRouter = router({
     return store;
   }),
 
+  // Payment Settings (SindiPay) - account status
+  getSindiPayAccount: sellerProcedure.query(async ({ ctx }) => {
+    const { getSellerPaymentAccountPublic } = await import('./db');
+    return await getSellerPaymentAccountPublic({
+      sellerId: ctx.user!.id,
+      paymentProvider: 'sindipay',
+    });
+  }),
+
+  // Payment Settings (SindiPay) - upsert (encrypted at rest)
+  upsertSindiPayAccount: sellerProcedure
+    .input(
+      z.object({
+        merchantId: z.string().min(1).max(255),
+        apiKey: z.string().min(1).max(2048),
+        apiSecret: z.string().min(1).max(2048),
+        webhookSecret: z.string().min(1).max(2048),
+        status: z.enum(['inactive', 'active']).default('inactive'),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { upsertSellerPaymentAccount, createAuditLog } = await import('./db');
+
+      try {
+        const res = await upsertSellerPaymentAccount({
+          sellerId: ctx.user!.id,
+          paymentProvider: 'sindipay',
+          merchantId: input.merchantId,
+          apiKey: input.apiKey,
+          apiSecret: input.apiSecret,
+          webhookSecret: input.webhookSecret,
+          status: input.status,
+        });
+
+        await createAuditLog({
+          userId: ctx.user!.id,
+          action: 'upsert',
+          entityType: 'seller_payment_account',
+          entityId: res.id,
+          newValue: { paymentProvider: 'sindipay', status: input.status, merchantId: input.merchantId },
+        });
+
+        return { success: true, id: res.id };
+      } catch (e: any) {
+        const msg = String(e?.message ?? e);
+        if (msg.includes('PAYMENT_ENCRYPTION_KEY')) {
+          throw new Error('PAYMENT_ENCRYPTION_KEY غير مضبوط على الخادم');
+        }
+        throw e;
+      }
+    }),
+
+  // Payment Settings (SindiPay) - disable
+  disableSindiPayAccount: sellerProcedure
+    .mutation(async ({ ctx }) => {
+      const { disableSellerPaymentAccount, createAuditLog } = await import('./db');
+      await disableSellerPaymentAccount({ sellerId: ctx.user!.id, paymentProvider: 'sindipay' });
+      await createAuditLog({
+        userId: ctx.user!.id,
+        action: 'disable',
+        entityType: 'seller_payment_account',
+        entityId: 0,
+        newValue: { paymentProvider: 'sindipay', status: 'inactive' },
+      });
+      return { success: true };
+    }),
+
   // Create store
   createStore: sellerProcedure
     .input(z.object({
@@ -1775,6 +1911,7 @@ const cartRouter = router({
       }
 
       const orderIds: number[] = [];
+      const paymentLinks: { orderId: number; paymentId: number; providerRef: string; paymentUrl?: string }[] = [];
 
       // إنشاء طلب لكل متجر
       for (const [storeId, items] of Array.from(storeGroups)) {
@@ -1832,23 +1969,58 @@ const cartRouter = router({
           console.error('[Checkout] Failed to create notification:', e);
         }
 
-        // تحويل صافي البائع مباشرة وبشكل ذري لمنع التداخل تحت الضغط العالي
-        await db.execute(sql`
-          INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
-          VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
-          ON CONFLICT (sellerid)
-          DO UPDATE SET
-            balance = sellerwallet.balance + EXCLUDED.balance,
-            updatedat = NOW()
-        `);
-
-        await createTransaction({
+        const paymentId = await createTransaction({
           orderId,
           buyerId: ctx.user!.id,
           sellerId,
           amount: orderTotal,
           paymentMethod: input.paymentMethod,
         });
+
+        if (input.paymentMethod === 'sindipay') {
+          const { getSellerPaymentAccountCredentials, updatePaymentProviderRef, updatePaymentStatus, updateOrderPaymentStatus } = await import('./db');
+          const { sindiPayCreatePayment } = await import('./lib/sindipay');
+
+          const creds = await getSellerPaymentAccountCredentials({ sellerId: Number(sellerId), paymentProvider: 'sindipay' });
+          if (!creds || creds.status !== 'active') {
+            throw new Error('حساب SindiPay غير مفعل للبائع');
+          }
+
+          const callbackUrl = process.env.SINDIPAY_CALLBACK_URL;
+          const webhookUrl = process.env.SINDIPAY_WEBHOOK_URL;
+
+          const result = await sindiPayCreatePayment(
+            { merchantId: creds.merchantId, apiKey: creds.apiKey, apiSecret: creds.apiSecret },
+            {
+              amount: orderTotal,
+              currency: 'USD',
+              orderId,
+              description: `STAR LUX Order #${orderId}`,
+              customer: {
+                name: input.shippingAddress?.fullName,
+                phone: input.shippingAddress?.phone,
+                email: ctx.user?.email,
+              },
+              callbackUrl: callbackUrl || undefined,
+              webhookUrl: webhookUrl || undefined,
+            }
+          );
+
+          await updatePaymentProviderRef(paymentId, result.providerRef);
+          await updatePaymentStatus(paymentId, 'initiated');
+          await updateOrderPaymentStatus(orderId, 'initiated');
+          paymentLinks.push({ orderId, paymentId, providerRef: result.providerRef, paymentUrl: result.paymentUrl });
+        } else {
+          // تحويل صافي البائع مباشرة وبشكل ذري لمنع التداخل تحت الضغط العالي
+          await db.execute(sql`
+            INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
+            VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
+            ON CONFLICT (sellerid)
+            DO UPDATE SET
+              balance = sellerwallet.balance + EXCLUDED.balance,
+              updatedat = NOW()
+          `);
+        }
 
         console.log(`[Checkout] Order ${orderId} created - Total: $${orderTotal}, Commission: $${orderCommission}, Seller: $${sellerAmount}`);
       }
@@ -1859,14 +2031,12 @@ const cartRouter = router({
       return {
         success: true,
         orderIds,
-        subtotal,
-        commission,
-        total,
-        message: `تم إنشاء ${orderIds.length} طلب بنجاح`,
+        paymentLinks, // Return payment links
+        message: 'تم إنشاء الطلب بنجاح',
       };
     }),
 
-  // Buy Now - إنشاء طلب مباشر لمنتج واحد ثم الانتقال لصفحة الدفع
+// ...
   buyNow: protectedProcedure
     .input(
       z.object({
@@ -3397,12 +3567,121 @@ const aiRouter = router({
     }),
 });
 
+// ============= Buyer Router =============
+const buyerRouter = router({
+  // Get buyer's orders
+  getOrders: protectedProcedure
+    .input(z.object({
+      status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']).optional(),
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const { getBuyerOrders } = await import('./db');
+      const { status, limit = 50, offset = 0 } = input || {};
+      const orders = await getBuyerOrders(ctx.user!.id, status, limit, offset);
+      return { orders, total: orders.length };
+    }),
+
+  // Get order details
+  getOrderDetails: protectedProcedure
+    .input(z.object({ orderId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const { getOrderDetails } = await import('./db');
+      const order = await getOrderDetails(input.orderId, ctx.user!.id);
+      if (!order) {
+        throw new Error('الطلب غير موجود');
+      }
+      return order;
+    }),
+
+  // Cancel order
+  cancelOrder: protectedProcedure
+    .input(z.object({ orderId: z.number(), reason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { cancelOrder } = await import('./db');
+      await cancelOrder(input.orderId, ctx.user!.id, input.reason);
+      return { success: true, message: 'تم إلغاء الطلب بنجاح' };
+    }),
+
+  // Request refund
+  requestRefund: protectedProcedure
+    .input(z.object({
+      orderId: z.number(),
+      reason: z.string().min(10),
+      amount: z.number().positive().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { requestRefund } = await import('./db');
+      await requestRefund(input.orderId, ctx.user!.id, input.reason, input.amount);
+      return { success: true, message: 'تم إرسال طلب الاسترداد' };
+    }),
+
+  // Get buyer profile
+  getProfile: protectedProcedure.query(async ({ ctx }) => {
+    const { getUserById } = await import('./db');
+    const user = await getUserById(ctx.user!.id);
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
+      profileImage: user.profileImage,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt,
+    };
+  }),
+
+  // Update buyer profile
+  updateProfile: protectedProcedure
+    .input(z.object({
+      name: z.string().min(2).optional(),
+      phoneNumber: z.string().min(7).max(20).optional(),
+      profileImage: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await updateUser(ctx.user!.id, input);
+      return { success: true, message: 'تم تحديث الملف الشخصي بنجاح' };
+    }),
+
+  // Get buyer stats
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const { getBuyerStats } = await import('./db');
+    return await getBuyerStats(ctx.user!.id);
+  }),
+
+  // Get wishlist
+  getWishlist: protectedProcedure.query(async ({ ctx }) => {
+    const { getUserWishlist } = await import('./db');
+    return await getUserWishlist(ctx.user!.id);
+  }),
+
+  // Add to wishlist
+  addToWishlist: protectedProcedure
+    .input(z.object({ productId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { addToWishlist } = await import('./db');
+      await addToWishlist(ctx.user!.id, input.productId);
+      return { success: true, message: 'تم إضافة المنتج إلى المفضلة' };
+    }),
+
+  // Remove from wishlist
+  removeFromWishlist: protectedProcedure
+    .input(z.object({ productId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { removeFromWishlist } = await import('./db');
+      await removeFromWishlist(ctx.user!.id, input.productId);
+      return { success: true, message: 'تم حذف المنتج من المفضلة' };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   admin: adminRouter,
   ai: aiRouter,
   seller: sellerRouter,
+  buyer: buyerRouter,
   cart: cartRouter,
   products: productsRouter,
   chatbot: chatbotRouter,

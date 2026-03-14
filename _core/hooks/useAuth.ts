@@ -1,1 +1,1 @@
-export { useAuth } from "../../useAuthOptimized";
+export { useAuth } from "../../hooks/useAuthOptimized";

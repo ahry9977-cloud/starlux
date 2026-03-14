@@ -189,16 +189,16 @@ describe("OAuth Login API", () => {
       });
     });
 
-    it("should require provider to be google or facebook", () => {
-      const validProviders = ["google", "facebook"];
-      const invalidProviders = ["twitter", "github", "linkedin"];
+    it("should require provider to be google, facebook, or github", () => {
+      const validProviders = ["google", "facebook", "github"];
+      const invalidProviders = ["twitter", "linkedin"];
 
       validProviders.forEach((provider) => {
-        expect(["google", "facebook"]).toContain(provider);
+        expect(["google", "facebook", "github"]).toContain(provider);
       });
 
       invalidProviders.forEach((provider) => {
-        expect(["google", "facebook"]).not.toContain(provider);
+        expect(["google", "facebook", "github"]).not.toContain(provider);
       });
     });
 

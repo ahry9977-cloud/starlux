@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Phone, AlertCircle, CheckCircle } from 'lucide-react';
-import { GlowInput } from './GlowInput';
-import { GlowButton } from './GlowButton';
+import { GlowInput } from '../../GlowInput';
+import { GlowButton } from '../../GlowButton';
 import { cn } from '@/lib/utils';
 
 interface LoginFormProps {

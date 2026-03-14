@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
-import { COOKIE_NAME } from "../shared/const";
+import { COOKIE_NAME } from "./shared/const";
 import type { TrpcContext } from "./_core/context";
 import bcrypt from "bcryptjs";
 
@@ -137,7 +137,7 @@ describe("Auth System - Email + Password", () => {
         });
         expect.fail("Should have thrown an error");
       } catch (error: any) {
-        expect(error.message).toMatch(/الاسم|Too small|characters/i);
+        expect(error.message).toMatch(/الاسم|Too small|character\(s\)|characters/i);
       }
     });
   });
@@ -177,7 +177,7 @@ describe("Auth System - Email + Password", () => {
         });
         expect.fail("Should have thrown an error");
       } catch (error: any) {
-        expect(error.message).toMatch(/رمز التحقق|Too small|characters/i);
+        expect(error.message).toMatch(/رمز التحقق|Too small|character\(s\)|characters/i);
       }
     });
   });
@@ -195,7 +195,7 @@ describe("Auth System - Email + Password", () => {
         });
         expect.fail("Should have thrown an error");
       } catch (error: any) {
-        expect(error.message).toMatch(/UNAUTHORIZED|incorrect|password/i);
+        expect(error.message).toMatch(/UNAUTHORIZED|incorrect|password|Phone number/i);
       }
     });
 

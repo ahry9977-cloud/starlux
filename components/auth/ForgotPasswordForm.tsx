@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, Lock, ArrowLeft, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
-import { GlowInput } from './GlowInput';
-import { GlowButton } from './GlowButton';
-import { PasswordStrength } from './PasswordStrength';
+import { GlowInput } from '../../GlowInput';
+import { GlowButton } from '../../GlowButton';
+import { PasswordStrength } from '../../PasswordStrength';
 import { cn } from '@/lib/utils';
 
 interface ForgotPasswordFormProps {
@@ -212,7 +212,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
             type={method === 'email' ? 'email' : 'tel'}
             placeholder={method === 'email' ? 'البريد الإلكتروني' : 'رقم الهاتف'}
             value={identifier}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setIdentifier(e.target.value);
               if (validationErrors.identifier) {
                 setValidationErrors({ ...validationErrors, identifier: '' });
@@ -303,7 +303,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
               type="password"
               placeholder="كلمة المرور الجديدة"
               value={newPassword}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setNewPassword(e.target.value);
                 if (validationErrors.newPassword) {
                   setValidationErrors({ ...validationErrors, newPassword: '' });
@@ -320,7 +320,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
             type="password"
             placeholder="تأكيد كلمة المرور الجديدة"
             value={confirmPassword}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setConfirmPassword(e.target.value);
               if (validationErrors.confirmPassword) {
                 setValidationErrors({ ...validationErrors, confirmPassword: '' });

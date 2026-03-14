@@ -4,6 +4,8 @@ import compression from "compression";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +19,8 @@ import {
   createTokenPair,
   refreshAccessToken,
   verifyAccessToken,
-} from "./auth-advanced";
+} from "./lib/auth-advanced";
+import { registerOAuthRoutes } from "./lib/oauth";
 import { userDeviceTokens } from "./drizzle/schema";
 import {
   createUser,
@@ -33,7 +36,23 @@ async function bootstrapAdminFromEnv() {
   const emailRaw = process.env.ADMIN_EMAIL ?? "";
   const passwordRaw = process.env.ADMIN_PASSWORD ?? "";
   const shouldRun = emailRaw.trim().length > 0 && passwordRaw.trim().length > 0;
-  if (!shouldRun) return;
+  const isHosted =
+    process.env.NODE_ENV === "production" ||
+    Boolean(process.env.RAILWAY_ENVIRONMENT) ||
+    Boolean(process.env.RAILWAY_PROJECT_ID) ||
+    Boolean(process.env.RAILWAY_SERVICE_ID) ||
+    Boolean(process.env.RENDER) ||
+    Boolean(process.env.FLY_APP_NAME) ||
+    Boolean(process.env.HEROKU_APP_NAME);
+
+  if (!shouldRun) {
+    if (isHosted) {
+      console.warn(
+        "[bootstrap-admin] ADMIN_EMAIL/ADMIN_PASSWORD not set. Admin auto-bootstrap is disabled."
+      );
+    }
+    return;
+  }
 
   const email = emailRaw.toLowerCase().trim();
   const password = String(passwordRaw);
@@ -56,6 +75,17 @@ async function bootstrapAdminFromEnv() {
     });
     console.log("[bootstrap-admin] created admin user", { email, userId });
     return;
+  }
+
+  // If password hasn't changed, avoid re-hashing/updating on every boot
+  try {
+    const same = await bcrypt.compare(password, String((existing as any).passwordHash ?? ""));
+    if (same && String(existing.role ?? "") === "admin") {
+      console.log("[bootstrap-admin] admin already provisioned", { email, userId: existing.id });
+      return;
+    }
+  } catch {
+    // ignore and proceed with update
   }
 
   await updateUser(existing.id, {
@@ -102,13 +132,22 @@ app.use(
     credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 app.use(compression());
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf;
+    },
+  })
+);
+
+registerOAuthRoutes(app);
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -127,6 +166,127 @@ const authLimiter = rateLimit({
 app.use("/api", apiLimiter);
 app.use("/api/trpc/auth.", authLimiter);
 app.use("/api/rest/auth", authLimiter);
+
+function safeTimingEqual(a: Buffer, b: Buffer) {
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+function computeWebhookSignature(rawBody: Buffer, secret: string, format: "hex" | "base64") {
+  const mac = crypto.createHmac("sha256", secret).update(rawBody).digest();
+  return format === "base64" ? mac.toString("base64") : mac.toString("hex");
+}
+
+app.post("/api/webhooks/sindipay", async (req, res) => {
+  try {
+    const rawBody: Buffer = (req as any).rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
+    const sigHeaderName = String(process.env.SINDIPAY_WEBHOOK_SIGNATURE_HEADER ?? "x-signature").toLowerCase();
+    const sigRaw = String((req.headers as any)[sigHeaderName] ?? "").trim();
+    if (!sigRaw) {
+      return res.status(400).json({ ok: false, message: "Missing signature" });
+    }
+
+    const payload: any = req.body ?? {};
+    const providerRef = String(payload.providerRef ?? payload.reference ?? payload.ref ?? payload.paymentId ?? payload.id ?? "").trim();
+    const orderId = Number(payload.orderId ?? payload.order_id ?? payload.metadata?.orderId ?? payload.meta?.orderId ?? 0);
+    const statusRaw = String(payload.status ?? payload.paymentStatus ?? payload.state ?? "").toLowerCase().trim();
+
+    const db = await getDb();
+    if (!db) return res.status(503).json({ ok: false, message: "Database not available" });
+    const { payments, orders } = await import("./drizzle/schema");
+
+    const paymentRow = (await db
+      .select()
+      .from(payments)
+      .where(
+        providerRef
+          ? and(eq(payments.providerRef, providerRef), eq(payments.method, "sindipay"))
+          : and(eq(payments.orderId, orderId), eq(payments.method, "sindipay"))
+      )
+      .orderBy(desc(payments.id))
+      .limit(1)) as any[];
+
+    const payment = paymentRow?.[0];
+    if (!payment) {
+      return res.status(404).json({ ok: false, message: "Payment not found" });
+    }
+
+    const sellerId = Number(payment.sellerId ?? 0);
+    if (!Number.isFinite(sellerId) || sellerId <= 0) {
+      return res.status(400).json({ ok: false, message: "Invalid sellerId" });
+    }
+
+    const { getSellerPaymentAccountCredentials, updatePaymentStatus, updateOrderPaymentStatus } = await import("./db");
+    const creds = await getSellerPaymentAccountCredentials({ sellerId, paymentProvider: "sindipay" as any });
+    if (!creds) {
+      return res.status(400).json({ ok: false, message: "Seller webhook secret not configured" });
+    }
+
+    const format = (String(process.env.SINDIPAY_WEBHOOK_SIGNATURE_FORMAT ?? "hex").toLowerCase() === "base64"
+      ? "base64"
+      : "hex") as "hex" | "base64";
+
+    const computed = computeWebhookSignature(rawBody, creds.webhookSecret, format);
+    const ok = safeTimingEqual(Buffer.from(computed), Buffer.from(sigRaw));
+    if (!ok) {
+      return res.status(401).json({ ok: false, message: "Invalid signature" });
+    }
+
+    const normalized =
+      statusRaw.includes("paid") || statusRaw.includes("success") || statusRaw.includes("completed")
+        ? "paid"
+        : statusRaw.includes("fail") || statusRaw.includes("error") || statusRaw.includes("cancel")
+          ? "failed"
+          : statusRaw.includes("pending") || statusRaw.includes("init")
+            ? "initiated"
+            : "unknown";
+
+    const prevStatus = String(payment.status ?? "pending").toLowerCase();
+    const alreadyPaid = prevStatus === "paid";
+
+    if (prevStatus !== normalized) {
+      await updatePaymentStatus(Number(payment.id), normalized);
+      await updateOrderPaymentStatus(Number(payment.orderId), normalized);
+    }
+
+    if (normalized === "paid" && !alreadyPaid) {
+      const orderRow = (await db.select().from(orders).where(eq(orders.id, Number(payment.orderId))).limit(1)) as any[];
+      const order = orderRow?.[0];
+      const sellerAmount = Number(order?.sellerAmount ?? 0);
+      const commissionAmount = Number(order?.commission ?? 0);
+      if (sellerAmount > 0) {
+        await db.execute(sql`
+          INSERT INTO sellerwallet (sellerid, balance, currency, updatedat)
+          VALUES (${sellerId}, ${sellerAmount}, 'USD', NOW())
+          ON CONFLICT (sellerid)
+          DO UPDATE SET
+            balance = sellerwallet.balance + EXCLUDED.balance,
+            updatedat = NOW()
+        `);
+      }
+
+      // Record platform commission as revenue + log (commission is charged to seller, not buyer)
+      if (commissionAmount > 0) {
+        await db.execute(sql`
+          INSERT INTO platformcommissionrevenue (amount, createdat)
+          VALUES (${commissionAmount}, NOW())
+        `);
+        await db.execute(sql`
+          INSERT INTO commissionlogs (sellerid, amount, createdat)
+          VALUES (${sellerId}, ${commissionAmount}, NOW())
+        `);
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, message: err?.message ?? "Server error" });
+  }
+});
 
 function isSocialBot(userAgentRaw: unknown): boolean {
   const ua = String(userAgentRaw ?? "").toLowerCase();
@@ -587,7 +747,7 @@ app.post("/api/rest/cart/checkout", async (req, res) => {
     if (!Number.isFinite(userId)) return res.status(401).json({ ok: false, message: "Invalid token" });
 
     const paymentMethod = String(req.body?.paymentMethod ?? "").toLowerCase().trim();
-    const allowed = new Set(["mastercard", "visa", "asia_pay", "zain_cash"]);
+    const allowed = new Set(["mastercard", "visa", "asia_pay", "zain_cash", "sindipay"]);
     if (!allowed.has(paymentMethod)) {
       return res.status(400).json({ ok: false, message: "Unsupported payment method" });
     }

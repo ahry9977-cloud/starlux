@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { getUserByEmail, createUser, updateUser } from './db';
 
-const ADMIN_EMAIL = 'ahmedyassin525252@gmail.com'.toLowerCase().trim();
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL ?? 'ahmedyassin525252@gmail.com')
+  .toLowerCase()
+  .trim();
 
 function generateTempPassword() {
   // strong enough for temporary use, user should change immediately
@@ -10,8 +12,9 @@ function generateTempPassword() {
 }
 
 async function main() {
-  const tempPassword = generateTempPassword();
-  const passwordHash = await bcrypt.hash(tempPassword, 10);
+  const passwordRaw = String(process.env.ADMIN_PASSWORD ?? '').trim();
+  const effectivePassword = passwordRaw.length > 0 ? passwordRaw : generateTempPassword();
+  const passwordHash = await bcrypt.hash(effectivePassword, 10);
 
   const existing = await getUserByEmail(ADMIN_EMAIL);
 
@@ -44,8 +47,12 @@ async function main() {
   console.log('---');
   console.log('ADMIN LOGIN');
   console.log('Email:', ADMIN_EMAIL);
-  console.log('Temp Password:', tempPassword);
-  console.log('IMPORTANT: Change this password immediately after login.');
+  if (passwordRaw.length === 0) {
+    console.log('Password: (generated - not printed)');
+    console.log('IMPORTANT: set ADMIN_PASSWORD env and re-run if you need a known password.');
+  } else {
+    console.log('Password: (from ADMIN_PASSWORD env - not printed)');
+  }
 }
 
 main().catch((err) => {

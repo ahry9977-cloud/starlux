@@ -4,8 +4,8 @@
  */
 
 import { SignJWT, jwtVerify } from 'jose';
-import { User } from './drizzle/schema';
-import { getUserById } from './db';
+import { User } from '../drizzle/schema';
+import { getUserById } from '../db';
 
 const BASE_JWT_SECRET =
   process.env.JWT_SECRET ||

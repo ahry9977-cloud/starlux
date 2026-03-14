@@ -9,32 +9,32 @@ import { logger, trackError, getErrorStats, resetErrorStats, logPerformance, get
 
 // ============= اختبارات نظام العمولة =============
 describe('Commission System', () => {
-  it('should calculate 5% commission correctly', () => {
+  it('should calculate 2% commission correctly', () => {
     const { commission, netAmount } = calculateCommission(100);
-    expect(commission).toBe(5);
-    expect(netAmount).toBe(95);
+    expect(commission).toBe(2);
+    expect(netAmount).toBe(98);
   });
 
   it('should handle decimal amounts', () => {
     const { commission, netAmount } = calculateCommission(99.99);
-    expect(commission).toBe(5);
-    expect(netAmount).toBe(94.99);
+    expect(commission).toBe(2);
+    expect(netAmount).toBe(97.99);
   });
 
   it('should handle large amounts', () => {
     const { commission, netAmount } = calculateCommission(10000);
-    expect(commission).toBe(500);
-    expect(netAmount).toBe(9500);
+    expect(commission).toBe(200);
+    expect(netAmount).toBe(9800);
   });
 
   it('should handle small amounts', () => {
     const { commission, netAmount } = calculateCommission(1);
-    expect(commission).toBe(0.05);
-    expect(netAmount).toBe(0.95);
+    expect(commission).toBe(0.02);
+    expect(netAmount).toBe(0.98);
   });
 
   it('should have correct commission rate', () => {
-    expect(PLATFORM_COMMISSION_RATE).toBe(0.05);
+    expect(PLATFORM_COMMISSION_RATE).toBe(0.02);
   });
 });
 

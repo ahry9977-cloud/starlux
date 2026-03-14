@@ -50,10 +50,9 @@ const GoogleIcon = memo(() => (
   </svg>
 ));
 
-const AppleIcon = memo(() => (
+const GitHubIcon = memo(() => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M16.365 1.43c0 1.14-.43 2.2-1.19 3.03-.82.9-2.16 1.6-3.32 1.51-.14-1.1.41-2.25 1.14-3.05.81-.9 2.25-1.56 3.37-1.49z" />
-    <path d="M20.64 17.02c-.62 1.43-.91 2.06-1.71 3.33-1.12 1.74-2.7 3.9-4.66 3.92-1.74.02-2.19-1.14-4.56-1.12-2.37.01-2.86 1.14-4.6 1.12-1.96-.02-3.46-1.96-4.58-3.7C.43 18.5 0 16.6 0 14.78c0-3.43 2.22-5.25 4.4-5.25 1.74 0 2.84 1.15 4.28 1.15 1.4 0 2.25-1.15 4.27-1.15 1.95 0 4.01 1.06 4.89 2.9-3.82 2.09-3.2 7.51.8 9.59z" />
+    <path d="M12 .5a12 12 0 00-3.79 23.4c.6.11.82-.26.82-.58v-2.05c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.34-1.77-1.34-1.77-1.1-.75.08-.74.08-.74 1.21.09 1.85 1.25 1.85 1.25 1.08 1.84 2.83 1.31 3.52 1 .11-.78.42-1.31.76-1.61-2.67-.31-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.31-.54-1.56.12-3.25 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 016 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.69.24 2.94.12 3.25.77.84 1.24 1.91 1.24 3.22 0 4.62-2.8 5.64-5.48 5.94.43.37.82 1.11.82 2.24v3.32c0 .32.22.7.82.58A12 12 0 0012 .5z" />
   </svg>
 ));
 
@@ -68,6 +67,7 @@ EyeOffIcon.displayName = 'EyeOffIcon';
 MailIcon.displayName = 'MailIcon';
 LockIcon.displayName = 'LockIcon';
 ArrowLeftIcon.displayName = 'ArrowLeftIcon';
+GitHubIcon.displayName = 'GitHubIcon';
 
 const PremiumLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -388,7 +388,7 @@ const PremiumLogin: React.FC = () => {
                     type="button"
                     onClick={() => {
                       playClickSound();
-                      window.location.href = '/api/oauth/login';
+                      window.location.href = '/api/oauth/login?provider=google';
                     }}
                     className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
                     aria-label="Continue with Google"
@@ -399,18 +399,18 @@ const PremiumLogin: React.FC = () => {
                     type="button"
                     onClick={() => {
                       playClickSound();
-                      window.location.href = '/api/oauth/login';
+                      window.location.href = '/api/oauth/login?provider=github';
                     }}
                     className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-white"
-                    aria-label="Continue with Apple"
+                    aria-label="Continue with GitHub"
                   >
-                    <AppleIcon />
+                    <GitHubIcon />
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       playClickSound();
-                      window.location.href = '/api/oauth/login';
+                      window.location.href = '/api/oauth/login?provider=facebook';
                     }}
                     className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-[#1877F2]"
                     aria-label="Continue with Facebook"

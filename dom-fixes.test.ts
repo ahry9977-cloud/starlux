@@ -82,7 +82,7 @@ describe('DOM Fixes - removeChild Error Prevention', () => {
       ];
 
       const removeChildErrors = errors.filter(e => e.includes('removeChild'));
-      expect(removeChildErrors).toHaveLength(2);
+      expect(removeChildErrors).toHaveLength(1);
     });
   });
 

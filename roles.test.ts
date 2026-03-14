@@ -6,7 +6,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as roleDb from './roleDb';
 
-describe('Role & Permission System', () => {
+const _hasPostgres = Boolean(process.env.DATABASE_URL && /^postgres(ql)?:\/\//i.test(process.env.DATABASE_URL));
+const describeDb = _hasPostgres ? describe : describe.skip;
+
+describeDb('Role & Permission System', () => {
   let testRoleId: number;
   let testPermissionId: number;
   let testUserId = 1;
@@ -76,18 +79,17 @@ describe('Role & Permission System', () => {
   describe('Permission Management', () => {
     it('should create a new permission', async () => {
       const permission = await roleDb.createPermission({
-        name: 'users.create',
-        displayName: 'Create Users',
-        description: 'Permission to create new users',
-        category: 'users',
-        action: 'create',
-        riskLevel: 'high',
-        isSystem: false,
+        name: 'test.permission',
+        displayName: 'Test Permission',
+        description: 'A test permission',
+        category: 'test',
+        action: 'read',
+        requiresApproval: false,
       });
 
       expect(permission).toBeDefined();
-      expect(permission.name).toBe('users.create');
-      expect(permission.category).toBe('users');
+      expect(permission.name).toBe('test.permission');
+      expect(permission.category).toBe('test');
       testPermissionId = permission.id;
     });
 
@@ -242,7 +244,6 @@ describe('Role & Permission System', () => {
         displayName: 'Test Check',
         category: 'test',
         action: 'check',
-        isSystem: false,
       });
       checkPermissionId = permission.id;
 
@@ -283,7 +284,6 @@ describe('Role & Permission System', () => {
         action: 'test_action',
         entityType: 'role',
         entityId: testRoleId,
-        notes: 'Test audit log',
         changedBy: testUserId,
       });
 
@@ -342,7 +342,6 @@ describe('Role & Permission System', () => {
         displayName: 'Concurrent Test',
         category: 'test',
         action: 'concurrent',
-        isSystem: false,
       });
 
       const role = await roleDb.createRole({
