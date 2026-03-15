@@ -262,18 +262,7 @@ const PremiumRegister: React.FC = () => {
         <div className="h-px flex-1 bg-white/10" />
       </div>
 
-      <div className="grid grid-cols-3 gap-3" style={{ marginBottom: '8px' }}>
-        <button
-          type="button"
-          onClick={() => {
-            playClickSound();
-            window.location.href = '/api/oauth/login?provider=google';
-          }}
-          className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
-          aria-label="Sign up with Google"
-        >
-          <GoogleIcon />
-        </button>
+      <div className="grid grid-cols-1 gap-3" style={{ marginBottom: '8px' }}>
         <button
           type="button"
           onClick={() => {
@@ -284,17 +273,6 @@ const PremiumRegister: React.FC = () => {
           aria-label="Sign up with GitHub"
         >
           <GitHubIcon />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            playClickSound();
-            window.location.href = '/api/oauth/login?provider=facebook';
-          }}
-          className="h-11 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center text-[#1877F2]"
-          aria-label="Sign up with Facebook"
-        >
-          <FacebookIcon />
         </button>
       </div>
     </div>

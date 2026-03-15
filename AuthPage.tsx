@@ -73,7 +73,7 @@ export const AuthPage: React.FC = () => {
   const handleLogin = async (data: { identifier: string; password: string }) => {
     setError('');
     // Use OAuth login flow
-    window.location.href = '/api/oauth/login?provider=google';
+    window.location.href = '/api/oauth/login?provider=github';
   };
 
   const handleSignup = async (data: {
@@ -91,7 +91,7 @@ export const AuthPage: React.FC = () => {
       await signupMutation.mutateAsync(data);
     } else {
       // Fallback: redirect to OAuth
-      window.location.href = '/api/oauth/login?provider=google';
+      window.location.href = '/api/oauth/login?provider=github';
     }
   };
 

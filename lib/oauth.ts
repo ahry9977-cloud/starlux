@@ -13,7 +13,7 @@ function getQueryParam(req: Request, key: string): string | undefined {
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/login", async (req: Request, res: Response) => {
     const provider = (getQueryParam(req, "provider") ?? "").toLowerCase();
-    const allowed = new Set(["google", "facebook", "github"]);
+    const allowed = new Set(["github"]);
     const normalizedProvider = allowed.has(provider) ? provider : undefined;
 
     const base = String(ENV.oAuthServerUrl ?? "").trim().replace(/\/+$/, "");
